@@ -88,9 +88,28 @@ export function parseSalary(text, hints = {}) {
   return out
 }
 
-export function toDateISO(v) {
+// Workday and several employer portals only say how long ago a job went up
+// ("Posted 3 Days Ago"), so turn that back into a date rather than losing it.
+const AGO_MS = { minute: 60000, hour: 3600000, day: 86400000, week: 604800000, month: 2592000000 }
+const AGO_RE = /(\d+)\s*\+?\s*(minute|hour|day|week|month)s?\s+ago/i
+const TODAY_RE = /\b(today|just posted|posted today)\b/i
+const YESTERDAY_RE = /\byesterday\b/i
+
+export function relativeToISO(text, now = Date.now()) {
+  const s = String(text || '')
+  if (!s) return null
+  if (TODAY_RE.test(s)) return new Date(now).toISOString()
+  if (YESTERDAY_RE.test(s)) return new Date(now - AGO_MS.day).toISOString()
+  const m = s.match(AGO_RE)
+  if (!m) return null
+  return new Date(now - Number(m[1]) * AGO_MS[m[2].toLowerCase()]).toISOString()
+}
+
+export function toDateISO(v, now = Date.now()) {
   if (!v) return null
   if (typeof v === 'number') return new Date(v > 1e12 ? v : v * 1000).toISOString()
+  const relative = relativeToISO(v, now)
+  if (relative) return relative
   const d = new Date(v)
   return Number.isNaN(d.getTime()) ? null : d.toISOString()
 }

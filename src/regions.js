@@ -158,6 +158,23 @@ function special(key) {
   return { regionKey: s.key, countyName: s.name, province: s.province }
 }
 
+// A "Dublin" that sits next to a US state is Dublin, Ohio or Dublin, California.
+const FALSE_DUBLIN = /\b(oh|ca|usa|u\.s\.|united states|ohio|california|georgia|texas|virginia|pennsylvania|new hampshire)\b/i
+const ROI = new Set(['Leinster', 'Munster', 'Connacht', 'Ulster (ROI)'])
+
+// Whether a raw location string from an employer feed describes a job on this island.
+// Used to filter the worldwide employer boards down to the ones you could actually take.
+export function isIrishLocation(locationText, { includeNorthernIreland = true, includeNationwide = true } = {}) {
+  const loc = String(locationText || '')
+  if (!loc) return false
+  const r = resolveRegion(loc)
+  if (r.regionKey === 'nationwide') return includeNationwide
+  const irish = ROI.has(r.province) || (includeNorthernIreland && r.province === 'Northern Ireland')
+  if (!irish) return false
+  if (FALSE_DUBLIN.test(loc) && !/\bireland\b/i.test(loc)) return false
+  return true
+}
+
 export function allRegions() {
   return [
     ...COUNTIES.map((c) => ({ key: c.key, name: c.name, province: c.province })),

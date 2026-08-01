@@ -6,7 +6,7 @@
 // slug, open a company's careers page and look at the URL its job listings load from.
 
 import { getJSON, sleep } from './http.js'
-import { resolveRegion } from '../regions.js'
+import { isIrishLocation } from '../regions.js'
 
 export const DEFAULT_COMPANIES = [
   { provider: 'greenhouse', slug: 'stripe', name: 'Stripe' },
@@ -32,19 +32,7 @@ export const DEFAULT_COMPANIES = [
   { provider: 'smartrecruiters', slug: 'Ocorian', name: 'Ocorian' },
 ]
 
-// A "Dublin" that sits next to a US state is Dublin, Ohio or Dublin, California.
-const FALSE_DUBLIN = /\b(oh|ca|usa|u\.s\.|united states|ohio|california|georgia|texas|virginia|pennsylvania|new hampshire)\b/i
-const ROI_AND_NI = new Set(['Leinster', 'Munster', 'Connacht', 'Ulster (ROI)', 'Northern Ireland'])
-
-function isIrish(locationText) {
-  const loc = String(locationText || '')
-  if (!loc) return false
-  const r = resolveRegion(loc)
-  if (r.regionKey === 'nationwide') return true
-  if (!ROI_AND_NI.has(r.province)) return false
-  if (FALSE_DUBLIN.test(loc) && !/\bireland\b/i.test(loc)) return false
-  return true
-}
+const isIrish = (locationText) => isIrishLocation(locationText)
 
 const ADAPTERS = {
   async greenhouse({ slug, name }) {
