@@ -94,15 +94,17 @@ db.exec(`
 
 const preferredSource = `
   (CASE excluded.source
-    WHEN 'employer' THEN 5
-    WHEN 'jobsireland' THEN 4
+    WHEN 'employer' THEN 6
+    WHEN 'jobsireland' THEN 5
+    WHEN 'acca' THEN 4
     WHEN 'adzuna' THEN 3
     WHEN 'careerjet' THEN 2
     ELSE 1 END)
   >=
   (CASE jobs.source
-    WHEN 'employer' THEN 5
-    WHEN 'jobsireland' THEN 4
+    WHEN 'employer' THEN 6
+    WHEN 'jobsireland' THEN 5
+    WHEN 'acca' THEN 4
     WHEN 'adzuna' THEN 3
     WHEN 'careerjet' THEN 2
     ELSE 1 END)

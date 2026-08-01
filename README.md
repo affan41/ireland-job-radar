@@ -55,6 +55,7 @@ over aggregator redirects, and the card shows when another source also carries i
 | Source | Key needed | What it gives you |
 | --- | --- | --- |
 | Careerjet Ireland | No | The bulk of it. Aggregates IrishJobs, Jobs.ie, the recruitment agencies and most employer sites |
+| ACCA Careers | No | Finance and accountancy vacancies from ACCA's official careers board, searched directly for Ireland |
 | JobsIreland | No | Independent vacancies from the Irish government's Department of Social Protection service, including its complete current part-time search |
 | Employer boards | No | Greenhouse, Ashby, Workable, Lever and SmartRecruiters boards, straight from companies including Stripe, Intercom, OpenAI, H&M, JYSK, Version 1 and MUFG. Roles here often never reach the aggregators |
 | Remote boards | No | Remotive, Himalayas, Jobicy, Arbeitnow, filtered hard to listings that actually accept someone in Ireland |
@@ -122,6 +123,8 @@ The settings worth knowing:
 - `refreshMinutes` how often the running server collects. Minimum 10.
 - `careerjet.maxPages` pages per search term. Each page is 99 listings. The default
   is 3; raising it further widens coverage at the cost of a slower refresh.
+- `accaCareers.maxPages` controls how many 20-vacancy pages are read from ACCA
+  Careers' official Ireland RSS search. The default 25 covers up to 500 listings.
 - `jobsIreland.latestPages` controls how many 250-vacancy pages are read from the
   government service. Its dedicated part-time search is collected separately.
 - `pruneAfterDays` how long a listing survives without being seen again.

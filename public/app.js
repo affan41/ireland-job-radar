@@ -154,6 +154,7 @@ const MODE_LABELS = { hybrid: 'Hybrid', remote: 'Remote', onsite: 'On site', uns
 const TYPE_LABELS = { part_time: 'Part-time', full_time: 'Full-time', temporary: 'Temporary / seasonal', contract: 'Contract', unspecified: 'Not stated' }
 const SOURCE_LABELS = {
   careerjet: 'Careerjet / aggregated boards',
+  acca: 'ACCA Careers',
   jobsireland: 'JobsIreland (government)',
   adzuna: 'Adzuna',
   employer: 'Direct from employer',

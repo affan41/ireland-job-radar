@@ -11,6 +11,12 @@
     "affid": null
   },
 
+  "accaCareers": {
+    "_comment": "Official ACCA Careers RSS search for Ireland. No key required.",
+    "enabled": true,
+    "maxPages": 25
+  },
+
   "adzuna": {
     "_comment": "Free keys from https://developer.adzuna.com. Adds salary data and wider coverage.",
     "enabled": true,

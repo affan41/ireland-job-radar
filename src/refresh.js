@@ -3,6 +3,7 @@ import { PROFILES } from './profiles.js'
 import { buildJob } from './normalise.js'
 import { upsertJob, startRun, finishRun, pruneStale, db } from './db.js'
 import { fetchCareerjet } from './sources/careerjet.js'
+import { fetchAccaCareers } from './sources/acca.js'
 import { fetchAdzuna } from './sources/adzuna.js'
 import { fetchJobsIreland } from './sources/jobsireland.js'
 import { fetchATS } from './sources/ats.js'
@@ -40,6 +41,16 @@ export async function runRefresh({ quiet = false } = {}) {
         profiles: PROFILES,
         maxPages: config.careerjet.maxPages,
         affid: config.careerjet.affid,
+        onProgress: note,
+      })
+      collected.push(...r.jobs)
+      errors.push(...r.errors)
+    }
+
+    if (config.accaCareers.enabled) {
+      note('ACCA Careers: searching Ireland')
+      const r = await fetchAccaCareers({
+        maxPages: config.accaCareers.maxPages,
         onProgress: note,
       })
       collected.push(...r.jobs)

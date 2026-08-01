@@ -12,6 +12,7 @@ const defaults = {
   refreshOnStart: true,
   pruneAfterDays: 30,
   careerjet: { enabled: true, maxPages: 3, affid: null },
+  accaCareers: { enabled: true, maxPages: 25 },
   adzuna: { enabled: true, appId: null, appKey: null, maxPages: 2 },
   jobsIreland: { enabled: true, latestPageSize: 250, latestPages: 4, partTimeLimit: 250 },
   employers: { enabled: true, companies: DEFAULT_COMPANIES },
