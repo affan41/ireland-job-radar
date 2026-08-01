@@ -34,14 +34,21 @@
   },
 
   "officialEmployers": {
-    "_comment": "Official Apple, Amazon and Microsoft Ireland careers feeds. No key required.",
+    "_comment": "Official Ireland careers feeds for Apple, Amazon, Microsoft, KPMG, Deloitte, PwC and EY. No key required.",
     "enabled": true,
     "apple": true,
     "amazon": true,
     "microsoft": true,
+    "kpmg": true,
+    "deloitte": true,
+    "pwc": true,
+    "ey": true,
     "appleMaxPages": 10,
     "amazonMaxPages": 10,
-    "microsoftMaxPages": 10
+    "microsoftMaxPages": 10,
+    "kpmgMaxPages": 10,
+    "deloitteMaxPages": 10,
+    "eyMaxPages": 10
   },
 
   "employers": {

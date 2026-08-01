@@ -85,7 +85,7 @@ export async function runRefresh({ quiet = false } = {}) {
     }
 
     if (config.officialEmployers.enabled) {
-      note('Official Apple, Amazon and Microsoft career sites')
+      note('Official MNC career sites')
       const r = await fetchOfficialEmployers({ settings: config.officialEmployers, onProgress: note })
       collected.push(...r.jobs)
       errors.push(...r.errors)

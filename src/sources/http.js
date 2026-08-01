@@ -24,6 +24,30 @@ export async function getJSON(url, { headers = {}, timeout = 25000, retries = 2 
   throw lastErr
 }
 
+export async function postJSON(url, body, { headers = {}, timeout = 25000, retries = 2 } = {}) {
+  let lastErr
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const ctl = new AbortController()
+    const timer = setTimeout(() => ctl.abort(), timeout)
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        signal: ctl.signal,
+        headers: { 'User-Agent': UA, Accept: 'application/json', 'Content-Type': 'application/json', ...headers },
+        body: JSON.stringify(body),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      return await res.json()
+    } catch (err) {
+      lastErr = err
+      if (attempt < retries) await sleep(700 * (attempt + 1))
+    } finally {
+      clearTimeout(timer)
+    }
+  }
+  throw lastErr
+}
+
 export async function getText(url, { headers = {}, timeout = 25000, retries = 2 } = {}) {
   let lastErr
   for (let attempt = 0; attempt <= retries; attempt++) {
