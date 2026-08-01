@@ -15,6 +15,15 @@ const defaults = {
   accaCareers: { enabled: true, maxPages: 25 },
   adzuna: { enabled: true, appId: null, appKey: null, maxPages: 2 },
   jobsIreland: { enabled: true, latestPageSize: 250, latestPages: 4, partTimeLimit: 250 },
+  officialEmployers: {
+    enabled: true,
+    apple: true,
+    amazon: true,
+    microsoft: true,
+    appleMaxPages: 10,
+    amazonMaxPages: 10,
+    microsoftMaxPages: 10,
+  },
   employers: { enabled: true, companies: DEFAULT_COMPANIES },
   remoteBoards: { enabled: true },
 }

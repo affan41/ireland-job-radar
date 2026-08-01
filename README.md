@@ -57,6 +57,7 @@ over aggregator redirects, and the card shows when another source also carries i
 | Careerjet Ireland | No | The bulk of it. Aggregates IrishJobs, Jobs.ie, the recruitment agencies and most employer sites |
 | ACCA Careers | No | Finance and accountancy vacancies from ACCA's official careers board, searched directly for Ireland |
 | JobsIreland | No | Independent vacancies from the Irish government's Department of Social Protection service, including its complete current part-time search |
+| Apple, Amazon and Microsoft careers | No | Ireland vacancies read directly from each company's official career system, with direct application links rather than aggregator redirects |
 | Employer boards | No | Greenhouse, Ashby, Workable, Lever and SmartRecruiters boards, straight from companies including Stripe, Intercom, OpenAI, H&M, JYSK, Version 1 and MUFG. Roles here often never reach the aggregators |
 | Remote boards | No | Remotive, Himalayas, Jobicy, Arbeitnow, filtered hard to listings that actually accept someone in Ireland |
 | Adzuna Ireland | Yes, free | Extra coverage plus structured salary figures |
@@ -127,6 +128,8 @@ The settings worth knowing:
   Careers' official Ireland RSS search. The default 25 covers up to 500 listings.
 - `jobsIreland.latestPages` controls how many 250-vacancy pages are read from the
   government service. Its dedicated part-time search is collected separately.
+- `officialEmployers` controls the direct Apple, Amazon and Microsoft collectors.
+  Each company can be disabled independently in `config.json`.
 - `pruneAfterDays` how long a listing survives without being seen again.
 - `employers.companies` the careers boards to follow. To add one, find the company on
   Greenhouse, Ashby, Workable or Lever and take the slug out of the board URL.

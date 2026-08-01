@@ -6,6 +6,7 @@ import { fetchCareerjet } from './sources/careerjet.js'
 import { fetchAccaCareers } from './sources/acca.js'
 import { fetchAdzuna } from './sources/adzuna.js'
 import { fetchJobsIreland } from './sources/jobsireland.js'
+import { fetchOfficialEmployers } from './sources/official-employers.js'
 import { fetchATS } from './sources/ats.js'
 import { fetchRemote } from './sources/remote.js'
 
@@ -79,6 +80,13 @@ export async function runRefresh({ quiet = false } = {}) {
         partTimeLimit: config.jobsIreland.partTimeLimit,
         onProgress: note,
       })
+      collected.push(...r.jobs)
+      errors.push(...r.errors)
+    }
+
+    if (config.officialEmployers.enabled) {
+      note('Official Apple, Amazon and Microsoft career sites')
+      const r = await fetchOfficialEmployers({ settings: config.officialEmployers, onProgress: note })
       collected.push(...r.jobs)
       errors.push(...r.errors)
     }
