@@ -1,0 +1,15 @@
+{
+  "name": "ireland-job-radar",
+  "version": "1.0.0",
+  "private": true,
+  "description": "One portal for jobs across Ireland, filterable by county, refreshed automatically.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.5"
+  },
+  "scripts": {
+    "start": "node --no-warnings server.js",
+    "refresh": "node --no-warnings scripts/refresh-once.js",
+    "test": "node --test"
+  }
+}

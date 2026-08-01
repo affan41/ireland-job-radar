@@ -1,0 +1,43 @@
+{
+  "_comment": "Copy this to config.json and edit. Everything here is optional; the radar works with no config at all.",
+
+  "port": 8099,
+  "refreshMinutes": 45,
+  "pruneAfterDays": 30,
+
+  "careerjet": {
+    "enabled": true,
+    "maxPages": 3,
+    "affid": null
+  },
+
+  "adzuna": {
+    "_comment": "Free keys from https://developer.adzuna.com. Adds salary data and wider coverage.",
+    "enabled": true,
+    "appId": null,
+    "appKey": null,
+    "maxPages": 2
+  },
+
+  "jobsIreland": {
+    "_comment": "Official Department of Social Protection vacancies. No key required.",
+    "enabled": true,
+    "latestPageSize": 250,
+    "latestPages": 4,
+    "partTimeLimit": 250
+  },
+
+  "employers": {
+    "_comment": "Public careers boards. Add any company here to follow it directly.",
+    "enabled": true,
+    "companies": [
+      { "provider": "greenhouse", "slug": "stripe", "name": "Stripe" },
+      { "provider": "greenhouse", "slug": "intercom", "name": "Intercom" },
+      { "provider": "ashby", "slug": "openai", "name": "OpenAI" }
+    ]
+  },
+
+  "remoteBoards": {
+    "enabled": true
+  }
+}
