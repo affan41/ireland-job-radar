@@ -1,7 +1,8 @@
 import { createHash } from 'node:crypto'
-import { resolveRegion, detectWorkMode } from './regions.js'
+import { resolveRegion, detectWorkMode, countryFallback } from './regions.js'
 import { classify } from './profiles.js'
 import { detectEmploymentType } from './employment.js'
+import { assessSponsorship } from './sponsorship.js'
 
 const ENTITIES = {
   '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&#39;': "'", '&apos;': "'",
@@ -123,9 +124,15 @@ export function buildJob(raw, seenAt) {
   const description = clean(raw.description, 900)
   const locationRaw = clean(raw.locationRaw, 140)
 
-  const region = resolveRegion(locationRaw, raw.regionHint)
+  let region = resolveRegion(locationRaw, raw.regionHint)
+  // A Cyprus or Malta feed knows its own country even when the town is one the
+  // gazetteer has never heard of, so keep the listing rather than losing it.
+  if (region.regionKey === 'unknown' && raw.country) region = countryFallback(raw.country)
+
   const { profiles, groups, score } = classify(title, description)
   const salary = parseSalary(raw.salaryText, raw)
+  const country = region.country ?? raw.country ?? null
+  const sponsorship = assessSponsorship({ title, description, company, source: raw.source, country })
 
   return {
     id: jobId(title, company, locationRaw),
@@ -133,6 +140,9 @@ export function buildJob(raw, seenAt) {
     company,
     locationRaw,
     ...region,
+    country,
+    sponsorship: sponsorship.level,
+    sponsorshipReasons: sponsorship.reasons,
     url: raw.url,
     source: raw.source,
     sourceDetail: raw.sourceDetail ?? null,

@@ -4,7 +4,8 @@ import { extname, join, normalize, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { config } from './src/config.js'
-import { allRegions, PROVINCE_ORDER } from './src/regions.js'
+import { allRegions, PROVINCE_ORDER, COUNTRIES } from './src/regions.js'
+import { SPONSORSHIP_LEVELS, PERMIT_NOTES } from './src/sponsorship.js'
 import { GROUPS, PROFILES } from './src/profiles.js'
 import { queryJobs, facets, setSaved, setHidden, stats, lastRun, recentRuns } from './src/db.js'
 import { runRefresh, scheduleRefresh, refreshState } from './src/refresh.js'
@@ -30,6 +31,8 @@ const list = (v) => (v ? String(v).split(',').map((s) => s.trim()).filter(Boolea
 function filtersFrom(url) {
   const p = url.searchParams
   return {
+    countries: list(p.get('countries')),
+    sponsorship: list(p.get('sponsorship')),
     regions: list(p.get('regions')),
     provinces: list(p.get('provinces')),
     groups: list(p.get('groups')),
@@ -66,6 +69,9 @@ const server = createServer(async (req, res) => {
       return json(res, {
         regions: allRegions(),
         provinceOrder: PROVINCE_ORDER,
+        countries: COUNTRIES.map((c) => ({ code: c.code, name: c.name, provinces: c.provinces })),
+        sponsorshipLevels: SPONSORSHIP_LEVELS,
+        permitNotes: PERMIT_NOTES,
         groups: GROUPS,
         profiles: PROFILES.map((p) => ({ id: p.id, name: p.name, group: p.group })),
         facets: facets(f),
@@ -83,15 +89,17 @@ const server = createServer(async (req, res) => {
 
     if (path === '/api/export.csv') {
       const { rows } = queryJobs({ ...filtersFrom(url), limit: 300 })
-      const head = ['Title', 'Company', 'Location', 'County', 'Work mode', 'Job type', 'Salary', 'Posted', 'Source', 'Link']
+      const head = ['Title', 'Company', 'Location', 'Country', 'Region', 'Work mode', 'Job type',
+        'Sponsorship signal', 'Why', 'Salary', 'Posted', 'Source', 'Link']
       const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`
       const csv = [head.join(','), ...rows.map((r) => [
-        r.title, r.company, r.location_raw, r.county_name, r.work_mode, r.employment_type,
+        r.title, r.company, r.location_raw, r.country, r.county_name, r.work_mode, r.employment_type,
+        r.sponsorship, r.sponsorship_reasons,
         r.salary_text, (r.posted_at || r.first_seen || '').slice(0, 10), r.available_sources || r.source, r.url,
       ].map(esc).join(','))].join('\n')
       res.writeHead(200, {
         'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': `attachment; filename="ireland-jobs-${new Date().toISOString().slice(0, 10)}.csv"`,
+        'Content-Disposition': `attachment; filename="job-radar-${new Date().toISOString().slice(0, 10)}.csv"`,
       })
       return res.end(csv)
     }

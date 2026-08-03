@@ -9,6 +9,9 @@ const FILE = join(ROOT, 'config.json')
 const defaults = {
   port: 8099,
   refreshMinutes: 45,
+  // Which countries to collect. Ireland is home; Cyprus and Malta are the other
+  // two English-speaking EU markets that hire third-country nationals into finance.
+  countries: ['ie', 'cy', 'mt'],
   refreshOnStart: true,
   pruneAfterDays: 30,
   careerjet: { enabled: true, maxPages: 3, affid: null },

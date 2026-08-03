@@ -85,6 +85,15 @@ const jobColumns = new Set(db.prepare('PRAGMA table_info(jobs)').all().map((c) =
 if (!jobColumns.has('employment_type')) {
   db.exec("ALTER TABLE jobs ADD COLUMN employment_type TEXT DEFAULT 'unspecified'")
 }
+if (!jobColumns.has('country')) {
+  db.exec("ALTER TABLE jobs ADD COLUMN country TEXT")
+  db.exec("CREATE INDEX IF NOT EXISTS idx_jobs_country ON jobs(country)")
+}
+if (!jobColumns.has('sponsorship')) {
+  db.exec("ALTER TABLE jobs ADD COLUMN sponsorship TEXT DEFAULT 'unknown'")
+  db.exec("ALTER TABLE jobs ADD COLUMN sponsorship_reasons TEXT")
+  db.exec("CREATE INDEX IF NOT EXISTS idx_jobs_sponsorship ON jobs(sponsorship)")
+}
 
 // Seed provenance for databases created before multi-source tracking existed.
 db.exec(`
@@ -112,11 +121,12 @@ const preferredSource = `
 
 const upsertStmt = db.prepare(`
   INSERT INTO jobs (
-    id, title, company, location_raw, region_key, county_name, province,
+    id, title, company, location_raw, region_key, county_name, province, country,
     url, source, source_detail, description,
     salary_text, salary_min, salary_max, salary_currency, salary_period,
-    posted_at, work_mode, employment_type, profiles, groups, score, first_seen, last_seen
-  ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    posted_at, work_mode, employment_type, sponsorship, sponsorship_reasons,
+    profiles, groups, score, first_seen, last_seen
+  ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   ON CONFLICT(id) DO UPDATE SET
     last_seen   = excluded.last_seen,
     url         = CASE WHEN ${preferredSource} THEN excluded.url ELSE jobs.url END,
@@ -131,8 +141,11 @@ const upsertStmt = db.prepare(`
     region_key  = excluded.region_key,
     county_name = excluded.county_name,
     province    = excluded.province,
+    country     = excluded.country,
     work_mode   = excluded.work_mode,
     employment_type = excluded.employment_type,
+    sponsorship = excluded.sponsorship,
+    sponsorship_reasons = excluded.sponsorship_reasons,
     profiles    = excluded.profiles,
     groups      = excluded.groups,
     score       = excluded.score
@@ -158,6 +171,7 @@ export function upsertJob(j) {
     j.regionKey,
     j.countyName ?? null,
     j.province ?? null,
+    j.country ?? null,
     j.url,
     j.source,
     j.sourceDetail ?? null,
@@ -170,6 +184,8 @@ export function upsertJob(j) {
     j.postedAt ?? null,
     j.workMode ?? null,
     j.employmentType ?? 'unspecified',
+    j.sponsorship ?? 'unknown',
+    (j.sponsorshipReasons || []).join(' · ') || null,
     (j.profiles || []).join(','),
     (j.groups || []).join(','),
     j.score ?? 0,
@@ -212,6 +228,17 @@ function buildWhere(opts = {}, skip = null) {
   const where = []
   const params = []
 
+  // The country switch is deliberately not skippable: every other facet count is
+  // meant to describe the country you are currently looking at.
+  if (opts.countries?.length) {
+    where.push(`(j.country IN (${opts.countries.map(() => '?').join(',')})
+      OR (j.country IS NULL AND j.region_key = 'remote'))`)
+    params.push(...opts.countries)
+  }
+  if (skip !== 'sponsorship' && opts.sponsorship?.length) {
+    where.push(`COALESCE(j.sponsorship, 'unknown') IN (${opts.sponsorship.map(() => '?').join(',')})`)
+    params.push(...opts.sponsorship)
+  }
   if (skip !== 'region' && opts.regions?.length) {
     where.push(`j.region_key IN (${opts.regions.map(() => '?').join(',')})`)
     params.push(...opts.regions)
@@ -321,12 +348,23 @@ export function facets(opts = {}) {
     for (const r of rows) bySource[r.v] = r.n
   }
 
+  // The country tabs must show their own totals, so they are counted with the
+  // country filter itself lifted out of the query.
+  const byCountry = {}
+  {
+    const { clause, params } = buildWhere({ ...opts, countries: [] })
+    const rows = db.prepare(`SELECT j.country AS v, COUNT(*) AS n ${JOINS} ${clause} GROUP BY j.country`).all(...params)
+    for (const r of rows) byCountry[r.v ?? 'unknown'] = r.n
+  }
+
   return {
     byRegion: tally('region', 'j.region_key'),
     byGroup,
     bySource,
+    byCountry,
     byMode: tally('mode', 'j.work_mode'),
     byEmploymentType: tally('employmentType', 'j.employment_type'),
+    bySponsorship: tally('sponsorship', `COALESCE(j.sponsorship, 'unknown')`),
   }
 }
 

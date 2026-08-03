@@ -390,5 +390,7 @@ export async function fetchOfficialEmployers({ settings = {}, onProgress } = {})
     }
   }
 
-  return { jobs, errors }
+  // Every collector above reads an Ireland careers site, so a listing whose office
+  // name the gazetteer cannot place is still an Irish job.
+  return { jobs: jobs.map((j) => ({ country: 'ie', ...j })), errors }
 }

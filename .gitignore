@@ -5,3 +5,4 @@ data/*.db-shm
 data/*.db-wal
 node_modules/
 npm-debug.log*
+outputs/

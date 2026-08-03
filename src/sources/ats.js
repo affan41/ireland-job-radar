@@ -124,7 +124,7 @@ export async function fetchATS({ companies = DEFAULT_COMPANIES, delayMs = 250, o
     if (!adapter) { errors.push(`ats: unknown provider "${c.provider}"`); continue }
     try {
       const jobs = await adapter(c)
-      for (const j of jobs) out.push({ ...j, source: 'employer', sourceDetail: `${c.provider}:${c.slug}` })
+      for (const j of jobs) out.push({ ...j, source: 'employer', country: 'ie', sourceDetail: `${c.provider}:${c.slug}` })
       onProgress?.(`${c.provider}/${c.slug}: ${jobs.length} in Ireland`)
     } catch (err) {
       errors.push(`ats ${c.provider}/${c.slug}: ${err.message}`)

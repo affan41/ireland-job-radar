@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ireland Job Radar</title>
+<title>Job Radar</title>
 <link rel="stylesheet" href="/styles.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📍</text></svg>">
 </head>
@@ -11,14 +11,17 @@
 
 <header class="topbar">
   <div class="brand">
-    <h1>Ireland Job Radar</h1>
+    <h1>Job Radar</h1>
     <p id="tagline">Loading</p>
   </div>
+  <nav class="countries" id="countries"></nav>
   <div class="topbar-actions">
     <span id="runState" class="runstate"></span>
     <button id="refreshBtn" class="btn">Refresh now</button>
   </div>
 </header>
+
+<div id="permitNote" class="permit-note" hidden></div>
 
 <div class="layout">
 
@@ -26,6 +29,15 @@
     <div class="field">
       <input type="search" id="q" placeholder="Search title, company or text" autocomplete="off">
     </div>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Visa sponsorship</h2>
+        <button class="link" data-clear="sponsorship">Clear</button>
+      </div>
+      <div id="sponsorship" class="checklist"></div>
+      <p class="panel-note">Read from what each advert says, plus the employer's track record. A signal, not a promise.</p>
+    </section>
 
     <section class="panel">
       <div class="panel-head">

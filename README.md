@@ -1,10 +1,12 @@
-# Ireland Job Radar
+# Job Radar
 
-One portal for jobs across Ireland, filterable by county, refreshed on a timer.
+One portal for jobs across Ireland, Cyprus and Malta, filterable by country, region
+and visa sponsorship, refreshed on a timer.
 
 Pulls from the aggregators, from employers' own careers boards, and from the remote
-job boards, folds them into a single deduplicated list, works out which county each
-listing is in, and scores it against the kinds of role you actually want to see.
+job boards, folds them into a single deduplicated list, works out which country and
+region each listing is in, reads whether the advert says anything about sponsoring a
+work permit, and scores it against the kinds of role you actually want to see.
 
 No npm install. No build step. No API keys needed to start.
 
@@ -15,6 +17,9 @@ cd ~/ireland-job-radar && npm start
 ```
 
 Then open http://localhost:8099
+
+The three country tabs across the top switch between Ireland, Cyprus and Malta. Each
+carries its own region list and its own counts.
 
 The first launch finds an empty database and runs an initial collection, which takes
 two or three minutes. After that it refreshes itself every 45 minutes while the
@@ -54,7 +59,7 @@ over aggregator redirects, and the card shows when another source also carries i
 
 | Source | Key needed | What it gives you |
 | --- | --- | --- |
-| Careerjet Ireland | No | The bulk of it. Aggregates IrishJobs, Jobs.ie, the recruitment agencies and most employer sites |
+| Careerjet | No | The bulk of it, run separately against the Irish, Cypriot and Maltese indexes. Aggregates IrishJobs, Jobs.ie, the recruitment agencies and most employer sites |
 | ACCA Careers | No | Finance and accountancy vacancies from ACCA's official careers board, searched directly for Ireland |
 | JobsIreland | No | Independent vacancies from the Irish government's Department of Social Protection service, including its complete current part-time search |
 | Major employer career sites | No | Ireland vacancies read directly from Apple, Amazon, Microsoft, KPMG, Deloitte, PwC and EY, with official application links rather than aggregator redirects |
@@ -72,11 +77,40 @@ or run with environment variables:
 ADZUNA_APP_ID=xxxx ADZUNA_APP_KEY=yyyy npm start
 ```
 
+## Visa sponsorship
+
+Every listing carries one of four signals, shown as a tag on the card and filterable
+from the sidebar:
+
+| Signal | What it means |
+| --- | --- |
+| **Sponsorship mentioned** | The advert itself says it: visa sponsorship, relocation package, help with a work permit, or it names a permit route such as the Critical Skills Permit, a Single Permit or the Key Employee Initiative |
+| **Likely to sponsor** | The advert is silent, but the employer is one that routinely moves people across borders: Big Four and international practice firms, fund administrators, the Malta iGaming operators, the Limassol brokers, or a multinational read straight off its own careers site |
+| **Says no sponsorship** | The advert rules it out: no sponsorship, EU citizens only, or an existing right to work required |
+| **Not stated** | Nothing either way. Most listings land here |
+
+This is a reading of the advert, not a promise. An employer that has sponsored a
+hundred people can still say no to the hundred and first. Treat "likely" as a
+shortlist worth asking, not an answer.
+
+Under the country tabs there is a line explaining which permit you would actually be
+applying for in that country, with a link to the official guidance.
+
+To re-apply the sponsorship rules and country detection to listings already stored,
+without waiting for a refresh to see them again:
+
+```bash
+cd ~/ireland-job-radar && npm run backfill
+```
+
 ## Filters
 
-- **Region.** All 26 counties of the Republic plus the six in Northern Ireland,
-  grouped by province, with a live count against each. Counties with nothing in them
-  are hidden. Remote and nationwide listings get their own buckets.
+- **Country.** Ireland, Cyprus or Malta, as tabs across the top.
+- **Region.** For Ireland, all 26 counties of the Republic plus the six in Northern
+  Ireland, grouped by province. For Cyprus, the five districts. For Malta, its six
+  official regions including Gozo. Each with a live count, and regions with nothing
+  in them hidden. Remote and country-wide listings get their own buckets.
+- **Visa sponsorship.** The four signals above.
 - **Category.** The six groups above.
 - **Working pattern.** Hybrid, remote, on site, or not stated. Read out of the
   listing text, so hybrid roles surface even when the board has no field for it.

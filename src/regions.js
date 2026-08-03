@@ -1,9 +1,10 @@
-// Maps a free-text location string from a job board onto an Irish county.
+// Maps a free-text location string from a job board onto a county, district or
+// locality in one of the countries the radar covers.
 // Job boards write locations every possible way ("Dublin 2", "Athenry, Co Galway",
-// "Southside Dublin", "United Kingdom - Ireland"), so this is keyword matching
-// against a gazetteer of counties and their main towns, longest name first.
+// "Southside Dublin", "Valletta, Malta Island", "Limassol"), so this is keyword
+// matching against a gazetteer of places, longest name first.
 
-export const COUNTIES = [
+const IRISH_COUNTIES = [
   // Leinster
   { key: 'carlow', name: 'Carlow', province: 'Leinster', towns: ['Bagenalstown', 'Muine Bheag', 'Tullow', 'Carlow'] },
   { key: 'dublin', name: 'Dublin', province: 'Leinster', towns: [
@@ -86,41 +87,126 @@ export const COUNTIES = [
     'Cookstown', 'Dungannon', 'Strabane', 'Omagh', 'Tyrone'] },
 ]
 
+// Cyprus, by district. Limassol is the forex, fintech and shipping cluster and
+// Nicosia is where the audit and practice firms sit, so those two carry most of
+// what is worth seeing.
+const CYPRUS_DISTRICTS = [
+  { key: 'nicosia', name: 'Nicosia', province: 'Cyprus', towns: [
+    'Aglantzia', 'Strovolos', 'Lakatamia', 'Latsia', 'Dali', 'Engomi', 'Egkomi',
+    'Kaimakli', 'Anthoupoli', 'Lefkosia', 'Nicosia'] },
+  { key: 'limassol', name: 'Limassol', province: 'Cyprus', towns: [
+    'Germasogeia', 'Mesa Geitonia', 'Agios Athanasios', 'Ypsonas', 'Kolossi',
+    'Pareklisia', 'Zakaki', 'Lemesos', 'Limassol'] },
+  { key: 'larnaca', name: 'Larnaca', province: 'Cyprus', towns: [
+    'Aradippou', 'Livadia', 'Dromolaxia', 'Oroklini', 'Larnaka', 'Larnaca'] },
+  { key: 'paphos', name: 'Paphos', province: 'Cyprus', towns: [
+    'Peyia', 'Pegeia', 'Chloraka', 'Geroskipou', 'Polis Chrysochous', 'Pafos', 'Paphos'] },
+  { key: 'famagusta', name: 'Famagusta', province: 'Cyprus', towns: [
+    'Ayia Napa', 'Agia Napa', 'Paralimni', 'Protaras', 'Deryneia', 'Sotira', 'Famagusta'] },
+]
+
+// Malta, by its six official regions. The island is small enough that most adverts
+// just say "Malta", but the iGaming and fintech employers cluster hard around
+// Sliema, St Julian's and the Central Business District in Birkirkara.
+const MALTA_REGIONS = [
+  { key: 'malta-northern-harbour', name: 'Northern Harbour (Sliema, St Julian’s)', province: 'Malta', towns: [
+    'Saint Julian', 'St Julian', "St. Julian's", 'San Giljan', 'Paceville', 'Sliema',
+    'Gzira', 'Ta’ Xbiex', 'Ta Xbiex', 'Msida', 'Pieta', 'Birkirkara', 'Mriehel',
+    'Central Business District', 'San Gwann', 'Swieqi', 'Santa Venera', 'Hamrun',
+    'Qormi', 'Gharghur', 'Pembroke'] },
+  { key: 'malta-southern-harbour', name: 'Southern Harbour (Valletta, Floriana)', province: 'Malta', towns: [
+    'Valletta', 'Floriana', 'Marsa', 'Paola', 'Fgura', 'Tarxien', 'Zabbar', 'Kalkara',
+    'Vittoriosa', 'Birgu', 'Senglea', 'Isla', 'Cospicua', 'Bormla', 'Xghajra', 'Santa Lucija'] },
+  { key: 'malta-central', name: 'Central Malta (Mosta, Attard)', province: 'Malta', towns: [
+    'Mosta', 'Naxxar', 'Attard', 'Balzan', 'Lija', 'Iklin', 'Gharghur'] },
+  { key: 'malta-northern', name: 'Northern Malta (Mellieha, St Paul’s Bay)', province: 'Malta', towns: [
+    'Mellieha', 'Saint Paul’s Bay', "St Paul's Bay", 'San Pawl il-Bahar', 'Bugibba',
+    'Qawra', 'Xemxija', 'Mgarr'] },
+  { key: 'malta-south-eastern', name: 'South Eastern Malta (Birzebbuga, Marsaxlokk)', province: 'Malta', towns: [
+    'Birzebbuga', 'Marsaxlokk', 'Marsascala', 'Zejtun', 'Ghaxaq', 'Gudja', 'Luqa',
+    'Kirkop', 'Mqabba', 'Qrendi', 'Safi', 'Zurrieq'] },
+  { key: 'malta-western', name: 'Western Malta (Zebbug, Siggiewi)', province: 'Malta', towns: [
+    'Zebbug', 'Siggiewi', 'Dingli', 'Mtarfa', 'Mdina', 'Bahrija'] },
+  { key: 'malta-gozo', name: 'Gozo and Comino', province: 'Malta', towns: [
+    'Xewkija', 'Xaghra', 'Nadur', 'Marsalforn', 'Sannat', 'Fontana', 'Ghajnsielem',
+    'Qala', 'Zebbug Gozo', 'Comino', 'Gozo'] },
+]
+
+// Places whose names are not unique to the country ("Rabat" is in Morocco too,
+// "Victoria" is all over the world). These only count when the advert also names
+// the country, so a job in Victoria, Australia is not filed under Gozo.
+const AMBIGUOUS_TOWNS = {
+  'malta-western': ['Rabat'],
+  'malta-gozo': ['Victoria'],
+  'malta-northern-harbour': ['Pieta'],
+}
+
+export const COUNTIES = [
+  ...IRISH_COUNTIES.map((c) => ({ ...c, country: 'ie' })),
+  ...CYPRUS_DISTRICTS.map((c) => ({ ...c, country: 'cy' })),
+  ...MALTA_REGIONS.map((c) => ({ ...c, country: 'mt' })),
+].map((c) => ({ ...c, strictTowns: AMBIGUOUS_TOWNS[c.key] || [] }))
+
 // Boards often give a province rather than a county ("Software Engineer, Leinster"),
 // so each province gets a bucket of its own that still sorts under the right heading.
 export const PROVINCE_WIDE = [
-  { key: 'leinster-any', name: 'Leinster (county not stated)', province: 'Leinster', match: /\bleinster\b/i },
-  { key: 'munster-any', name: 'Munster (county not stated)', province: 'Munster', match: /\bmunster\b/i },
-  { key: 'connacht-any', name: 'Connacht (county not stated)', province: 'Connacht', match: /\b(connacht|connaught)\b/i },
-  { key: 'ulster-any', name: 'Ulster (county not stated)', province: 'Ulster (ROI)', match: /\bulster\b/i },
+  { key: 'leinster-any', name: 'Leinster (county not stated)', province: 'Leinster', country: 'ie', match: /\bleinster\b/i },
+  { key: 'munster-any', name: 'Munster (county not stated)', province: 'Munster', country: 'ie', match: /\bmunster\b/i },
+  { key: 'connacht-any', name: 'Connacht (county not stated)', province: 'Connacht', country: 'ie', match: /\b(connacht|connaught)\b/i },
+  { key: 'ulster-any', name: 'Ulster (county not stated)', province: 'Ulster (ROI)', country: 'ie', match: /\bulster\b/i },
+  { key: 'cyprus-any', name: 'Cyprus (district not stated)', province: 'Cyprus', country: 'cy', match: /\b(cyprus|kypros|κύπρος)\b/i },
+  { key: 'malta-any', name: 'Malta (locality not stated)', province: 'Malta', country: 'mt', match: /\bmalta\b/i },
 ]
 
 // Pseudo-regions that are not counties but that you still want to filter on.
 export const SPECIAL_REGIONS = [
-  { key: 'remote', name: 'Remote', province: 'Anywhere' },
-  { key: 'nationwide', name: 'Ireland (nationwide)', province: 'Anywhere' },
-  { key: 'unknown', name: 'Unclassified', province: 'Anywhere' },
+  { key: 'remote', name: 'Remote', province: 'Anywhere', country: null },
+  { key: 'nationwide', name: 'Ireland (nationwide)', province: 'Anywhere', country: 'ie' },
+  { key: 'unknown', name: 'Unclassified', province: 'Anywhere', country: null },
 ]
 
-export const PROVINCE_ORDER = ['Leinster', 'Munster', 'Connacht', 'Ulster (ROI)', 'Northern Ireland', 'Anywhere']
+export const PROVINCE_ORDER = [
+  'Leinster', 'Munster', 'Connacht', 'Ulster (ROI)', 'Northern Ireland',
+  'Cyprus', 'Malta', 'Anywhere',
+]
+
+// The countries the radar searches. Ireland is home turf; Cyprus and Malta are the
+// two other English-speaking EU markets that routinely hire third-country nationals
+// into finance and professional services.
+export const COUNTRIES = [
+  { code: 'ie', name: 'Ireland', match: /\b(ireland|ire|eire|éire|roi|irish)\b/i, provinces: ['Leinster', 'Munster', 'Connacht', 'Ulster (ROI)', 'Northern Ireland'] },
+  { code: 'cy', name: 'Cyprus', match: /\b(cyprus|cypriot|kypros|κύπρος)\b/i, provinces: ['Cyprus'] },
+  { code: 'mt', name: 'Malta', match: /\b(malta|maltese|gozo)\b/i, provinces: ['Malta'] },
+]
+
+export function detectCountry(text) {
+  const hay = String(text || '')
+  for (const c of COUNTRIES) if (c.match.test(hay)) return c.code
+  return null
+}
+
+const termRe = (term) => new RegExp(
+  `(^|[^a-z0-9])${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^a-z0-9]|$)`,
+  'i',
+)
 
 // One flat match table, longest phrase first so "Carrick-on-Shannon" wins over "Carrick"
-// and "Newcastle West" wins over any bare "Newcastle".
+// and "Newcastle West" wins over any bare "Newcastle". Places whose names are shared
+// with somewhere abroad are held back until the advert names the country.
 const MATCHERS = COUNTIES
-  .flatMap((c) => c.towns.map((t) => ({ term: t.toLowerCase(), county: c })))
+  .flatMap((c) => [
+    ...c.towns.map((t) => ({ term: t.toLowerCase(), county: c, strict: false })),
+    ...c.strictTowns.map((t) => ({ term: t.toLowerCase(), county: c, strict: true })),
+  ])
   .sort((a, b) => b.term.length - a.term.length)
-  .map((m) => ({
-    county: m.county,
-    re: new RegExp(`(^|[^a-z0-9])${m.term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^a-z0-9]|$)`, 'i'),
-  }))
+  .map((m) => ({ county: m.county, strict: m.strict, re: termRe(m.term) }))
 
 const REMOTE_RE = /\b(remote|work from home|wfh|anywhere|distributed|telecommut)/i
-const IRELAND_RE = /\b(ireland|ire|eire|éire|roi)\b/i
 
 // There is a Dublin in Ohio and California, a Bangor in Wales, a Limerick in
-// Pennsylvania. If the string names somewhere clearly not Ireland and never says
-// Ireland, do not claim the county.
-const NOT_IRELAND = /\b(oh|ca|ny|pa|va|tx|ga|nh|usa|u\.s\.a?\.?|united states|ohio|california|texas|georgia|virginia|pennsylvania|new hampshire|new york|canada|australia|india|wales|scotland|england|germany|france|spain|netherlands|poland|portugal)\b/i
+// Pennsylvania. If the string names somewhere clearly not one of our countries and
+// never names one of them, do not claim the region.
+const ELSEWHERE = /\b(oh|ca|ny|pa|va|tx|ga|nh|usa|u\.s\.a?\.?|united states|ohio|california|texas|georgia|virginia|pennsylvania|new hampshire|new york|canada|australia|india|wales|scotland|england|germany|france|spain|netherlands|poland|portugal|greece|morocco|italy|dubai|uae)\b/i
 
 export function resolveRegion(locationRaw, extra = '') {
   const loc = String(locationRaw || '').trim()
@@ -128,34 +214,44 @@ export function resolveRegion(locationRaw, extra = '') {
 
   if (!hay) return special('unknown')
 
-  const saysIreland = IRELAND_RE.test(hay)
-  const saysElsewhere = NOT_IRELAND.test(hay)
+  const named = detectCountry(hay)
+  const saysElsewhere = ELSEWHERE.test(hay)
 
-  if (!saysElsewhere || saysIreland) {
-    // A named county beats a "remote" tag: "Remote (Dublin)" is a Dublin job.
+  if (!saysElsewhere || named) {
+    // A named place beats a "remote" tag: "Remote (Dublin)" is a Dublin job.
     for (const m of MATCHERS) {
+      // When the advert names a country, only that country's places may match, so
+      // "Limassol" never wins in a listing that says Ireland.
+      if (named && m.county.country !== named) continue
+      if (m.strict && m.county.country !== named) continue
       if (m.re.test(hay)) {
         return {
           regionKey: m.county.key,
           countyName: m.county.name,
           province: m.county.province,
+          country: m.county.country,
         }
       }
     }
     for (const p of PROVINCE_WIDE) {
-      if (p.match.test(hay)) return { regionKey: p.key, countyName: p.name, province: p.province }
+      if (named && p.country !== named) continue
+      if (p.match.test(hay)) {
+        return { regionKey: p.key, countyName: p.name, province: p.province, country: p.country }
+      }
     }
   }
 
-  if (saysElsewhere && !saysIreland) return special('unknown')
-  if (REMOTE_RE.test(hay)) return special('remote')
-  if (saysIreland) return special('nationwide')
+  if (saysElsewhere && !named) return special('unknown')
+  if (REMOTE_RE.test(hay)) return { ...special('remote'), country: named }
+  if (named === 'ie') return special('nationwide')
+  if (named === 'cy') return { regionKey: 'cyprus-any', countyName: 'Cyprus (district not stated)', province: 'Cyprus', country: 'cy' }
+  if (named === 'mt') return { regionKey: 'malta-any', countyName: 'Malta (locality not stated)', province: 'Malta', country: 'mt' }
   return special('unknown')
 }
 
 function special(key) {
   const s = SPECIAL_REGIONS.find((r) => r.key === key)
-  return { regionKey: s.key, countyName: s.name, province: s.province }
+  return { regionKey: s.key, countyName: s.name, province: s.province, country: s.country }
 }
 
 // A "Dublin" that sits next to a US state is Dublin, Ohio or Dublin, California.
@@ -175,11 +271,34 @@ export function isIrishLocation(locationText, { includeNorthernIreland = true, i
   return true
 }
 
+// Same question as isIrishLocation, for whichever country you are looking at.
+export function isInCountry(locationText, code, { includeNationwide = true } = {}) {
+  if (code === 'ie') return isIrishLocation(locationText, { includeNationwide })
+  const loc = String(locationText || '')
+  if (!loc) return false
+  const country = COUNTRIES.find((c) => c.code === code)
+  if (!country) return false
+  const r = resolveRegion(loc)
+  if (r.country !== code) return false
+  if (!includeNationwide && r.regionKey.endsWith('-any')) return false
+  return country.provinces.includes(r.province)
+}
+
+// When a feed tells us which country it searched but the town is not in the
+// gazetteer, file it under that country rather than throwing it away.
+export function countryFallback(code) {
+  // Ireland's country-wide bucket is a special region, not one of the province ones.
+  if (code === 'ie') return special('nationwide')
+  const bucket = PROVINCE_WIDE.find((p) => p.country === code && p.key.endsWith('-any'))
+  if (bucket) return { regionKey: bucket.key, countyName: bucket.name, province: bucket.province, country: code }
+  return special('unknown')
+}
+
 export function allRegions() {
   return [
-    ...COUNTIES.map((c) => ({ key: c.key, name: c.name, province: c.province })),
-    ...PROVINCE_WIDE.map((p) => ({ key: p.key, name: p.name, province: p.province })),
-    ...SPECIAL_REGIONS.map((s) => ({ key: s.key, name: s.name, province: s.province })),
+    ...COUNTIES.map((c) => ({ key: c.key, name: c.name, province: c.province, country: c.country })),
+    ...PROVINCE_WIDE.map((p) => ({ key: p.key, name: p.name, province: p.province, country: p.country })),
+    ...SPECIAL_REGIONS.map((s) => ({ key: s.key, name: s.name, province: s.province, country: s.country })),
   ]
 }
 

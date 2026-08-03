@@ -1,6 +1,8 @@
 const $ = (sel) => document.querySelector(sel)
 
 const state = {
+  country: 'ie',
+  sponsorship: new Set(),
   regions: new Set(),
   groups: new Set(),
   modes: new Set(),
@@ -22,7 +24,7 @@ const STORE_KEY = 'ireland-job-radar.filters'
 const FILTER_VERSION = 2
 
 function saveState() {
-  const plain = { ...state, regions: [...state.regions], groups: [...state.groups], modes: [...state.modes], types: [...state.types], sources: [...state.sources] }
+  const plain = { ...state, sponsorship: [...state.sponsorship], regions: [...state.regions], groups: [...state.groups], modes: [...state.modes], types: [...state.types], sources: [...state.sources] }
   delete plain.page
   plain._version = FILTER_VERSION
   try { localStorage.setItem(STORE_KEY, JSON.stringify(plain)) } catch {}
@@ -31,8 +33,8 @@ function saveState() {
 function loadState() {
   try {
     const raw = JSON.parse(localStorage.getItem(STORE_KEY) || '{}')
-    for (const k of ['regions', 'groups', 'modes', 'types', 'sources']) if (Array.isArray(raw[k])) state[k] = new Set(raw[k])
-    for (const k of ['q', 'days', 'minScore', 'salaryMin', 'sort']) if (raw[k] != null) state[k] = raw[k]
+    for (const k of ['sponsorship', 'regions', 'groups', 'modes', 'types', 'sources']) if (Array.isArray(raw[k])) state[k] = new Set(raw[k])
+    for (const k of ['q', 'days', 'minScore', 'salaryMin', 'sort', 'country']) if (raw[k] != null) state[k] = raw[k]
     if (typeof raw.savedOnly === 'boolean') state.savedOnly = raw.savedOnly
     // Existing users had a narrower seven-day default. Widen it once without
     // disturbing their chosen regions, categories or shortlist preference.
@@ -42,6 +44,8 @@ function loadState() {
 
 function params(extra = {}) {
   const p = new URLSearchParams()
+  if (state.country) p.set('countries', state.country)
+  if (state.sponsorship.size) p.set('sponsorship', [...state.sponsorship].join(','))
   if (state.regions.size) p.set('regions', [...state.regions].join(','))
   if (state.groups.size) p.set('groups', [...state.groups].join(','))
   if (state.modes.size) p.set('modes', [...state.modes].join(','))
@@ -152,6 +156,11 @@ function renderRegions() {
 
 const MODE_LABELS = { hybrid: 'Hybrid', remote: 'Remote', onsite: 'On site', unspecified: 'Not stated' }
 const TYPE_LABELS = { part_time: 'Part-time', full_time: 'Full-time', temporary: 'Temporary / seasonal', contract: 'Contract', unspecified: 'Not stated' }
+const SPONSOR_LABELS = {
+  explicit: 'Sponsorship mentioned',
+  likely: 'Likely to sponsor',
+  unlikely: 'No sponsorship',
+}
 const SOURCE_LABELS = {
   careerjet: 'Careerjet / aggregated boards',
   acca: 'ACCA Careers',
@@ -161,8 +170,54 @@ const SOURCE_LABELS = {
   remote: 'Remote boards',
 }
 
+const FLAGS = { ie: '\u{1F1EE}\u{1F1EA}', cy: '\u{1F1E8}\u{1F1FE}', mt: '\u{1F1F2}\u{1F1F9}' }
+
+function renderCountries() {
+  const counts = meta.facets.byCountry || {}
+  const host = $('#countries')
+  host.innerHTML = ''
+
+  for (const c of meta.countries) {
+    const btn = document.createElement('button')
+    btn.className = `country${state.country === c.code ? ' on' : ''}`
+    btn.innerHTML = `<span class="flag">${FLAGS[c.code] || ''}</span>
+      <span class="cname">${esc(c.name)}</span>
+      <span class="cn">${counts[c.code] || 0}</span>`
+    btn.addEventListener('click', () => {
+      if (state.country === c.code) return
+      state.country = c.code
+      // Regions belong to one country, so carrying them across would show nothing.
+      state.regions.clear()
+      state.page = 0
+      refreshAll()
+    })
+    host.appendChild(btn)
+  }
+}
+
+function renderPermitNote() {
+  const note = (meta.permitNotes || {})[state.country]
+  const host = $('#permitNote')
+  if (!note) { host.hidden = true; return }
+  host.hidden = false
+  host.innerHTML = `<strong>Working in ${esc(note.name)} on a permit.</strong>
+    ${esc(note.note)}
+    <a href="${esc(note.link)}" target="_blank" rel="noopener">Official guidance</a>`
+}
+
 function renderFilters() {
+  renderCountries()
+  renderPermitNote()
   renderRegions()
+
+  checklist(
+    $('#sponsorship'),
+    (meta.sponsorshipLevels || []).map((l) => ({
+      key: l.key, name: l.label, count: meta.facets.bySponsorship?.[l.key] || 0,
+    })),
+    state.sponsorship,
+    () => { state.page = 0; refreshAll() },
+  )
 
   checklist(
     $('#groups'),
@@ -211,6 +266,10 @@ function jobCard(j) {
   const jobType = j.employment_type && j.employment_type !== 'unspecified'
     ? `<span class="tag job-type ${j.employment_type}">${TYPE_LABELS[j.employment_type] || j.employment_type}</span>`
     : ''
+  const sponsorLevel = j.sponsorship || 'unknown'
+  const sponsor = sponsorLevel === 'unknown'
+    ? ''
+    : `<span class="tag visa ${sponsorLevel}" title="${esc(j.sponsorship_reasons || '')}">${SPONSOR_LABELS[sponsorLevel]}</span>`
   const availableSources = String(j.available_sources || j.source || '').split(',').filter(Boolean)
   const extraSources = Math.max(availableSources.length - 1, 0)
   const sourceText = `${SOURCE_LABELS[j.source] || j.source}${j.source_detail ? ` (${j.source_detail})` : ''}${extraSources ? ` + ${extraSources} other source${extraSources === 1 ? '' : 's'}` : ''}`
@@ -228,6 +287,7 @@ function jobCard(j) {
     <div class="job-meta">
       ${j.company ? `<span class="company">${esc(j.company)}</span><span class="sep">·</span>` : ''}
       <span class="tag region">${esc(j.county_name || 'Unclassified')}</span>
+      ${sponsor}
       ${mode}
       ${jobType}
       ${salary}
@@ -310,8 +370,11 @@ async function loadMeta() {
 
   const s = meta.stats
   const when = meta.lastRun?.finished_at
+  const here = meta.facets.byCountry?.[state.country] || 0
+  const country = meta.countries.find((c) => c.code === state.country)?.name || ''
   $('#tagline').textContent =
-    `${s.total.toLocaleString('en-IE')} live listings · ${s.newLast24h} found today · ${s.saved} shortlisted` +
+    `${here.toLocaleString('en-IE')} in ${country} of ${s.total.toLocaleString('en-IE')} live listings` +
+    ` · ${s.newLast24h} found today · ${s.saved} shortlisted` +
     (when ? ` · updated ${timeAgo(when)}` : '')
 }
 
@@ -365,7 +428,8 @@ function bind() {
   }
 
   $('#resetAll').addEventListener('click', () => {
-    state.regions.clear(); state.groups.clear(); state.modes.clear(); state.types.clear(); state.sources.clear()
+    state.regions.clear(); state.groups.clear(); state.modes.clear(); state.types.clear()
+    state.sources.clear(); state.sponsorship.clear()
     state.q = ''; state.days = '14'; state.minScore = '10'; state.salaryMin = '0'; state.savedOnly = false; state.page = 0
     syncControls()
     refreshAll()

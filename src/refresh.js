@@ -37,9 +37,10 @@ export async function runRefresh({ quiet = false } = {}) {
 
   try {
     if (config.careerjet.enabled) {
-      note('Careerjet: searching Ireland')
+      note(`Careerjet: searching ${config.countries.join(', ').toUpperCase()}`)
       const r = await fetchCareerjet({
         profiles: PROFILES,
+        countries: config.countries,
         maxPages: config.careerjet.maxPages,
         affid: config.careerjet.affid,
         onProgress: note,

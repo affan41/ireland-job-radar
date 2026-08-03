@@ -7,18 +7,34 @@ import { getJSON, sleep } from './http.js'
 const ENDPOINT = 'http://public.api.careerjet.net/search'
 const PAGE_SIZE = 99
 
-export async function fetchCareerjet({ profiles, maxPages = 2, delayMs = 350, affid, onProgress }) {
+// Careerjet runs a separate index per country, each with its own locale code.
+export const CAREERJET_COUNTRIES = [
+  { code: 'ie', location: 'Ireland', locale: 'en_IE' },
+  { code: 'cy', location: 'Cyprus', locale: 'en_CY' },
+  { code: 'mt', location: 'Malta', locale: 'en_MT' },
+]
+
+export async function fetchCareerjet({
+  profiles,
+  countries = ['ie'],
+  maxPages = 2,
+  delayMs = 350,
+  affid,
+  onProgress,
+}) {
   const out = []
   const errors = []
 
-  const queries = profiles.flatMap((p) => p.queries.map((q) => ({ q, profile: p.id })))
+  const markets = CAREERJET_COUNTRIES.filter((c) => countries.includes(c.code))
+  const queries = markets.flatMap((market) =>
+    profiles.flatMap((p) => p.queries.map((q) => ({ q, profile: p.id, market }))))
 
-  for (const { q, profile } of queries) {
+  for (const { q, profile, market } of queries) {
     for (let page = 1; page <= maxPages; page++) {
       const params = new URLSearchParams({
         keywords: q,
-        location: 'Ireland',
-        locale_code: 'en_IE',
+        location: market.location,
+        locale_code: market.locale,
         pagesize: String(PAGE_SIZE),
         page: String(page),
         sort: 'date',
@@ -33,7 +49,7 @@ export async function fetchCareerjet({ profiles, maxPages = 2, delayMs = 350, af
       try {
         data = await getJSON(`${ENDPOINT}?${params}`, { headers: { Referer: 'http://localhost/ireland-job-radar' } })
       } catch (err) {
-        errors.push(`careerjet "${q}" p${page}: ${err.message}`)
+        errors.push(`careerjet ${market.location} "${q}" p${page}: ${err.message}`)
         break
       }
 
@@ -43,6 +59,10 @@ export async function fetchCareerjet({ profiles, maxPages = 2, delayMs = 350, af
         out.push({
           source: 'careerjet',
           sourceDetail: j.site || null,
+          country: market.code,
+          // Cyprus and Malta boards often give a bare town, so name the country
+          // for anything the gazetteer would otherwise file as unclassified.
+          regionHint: market.location,
           title: j.title,
           company: j.company,
           locationRaw: j.locations,
@@ -57,7 +77,7 @@ export async function fetchCareerjet({ profiles, maxPages = 2, delayMs = 350, af
         })
       }
 
-      onProgress?.(`careerjet "${q}" page ${page}: ${data.jobs.length}`)
+      onProgress?.(`careerjet ${market.location} "${q}" page ${page}: ${data.jobs.length}`)
       if (page >= (data.pages || 1)) break
       await sleep(delayMs)
     }

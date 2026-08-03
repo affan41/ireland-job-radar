@@ -2,7 +2,7 @@
   "name": "ireland-job-radar",
   "version": "1.0.0",
   "private": true,
-  "description": "One portal for jobs across Ireland, filterable by county, refreshed automatically.",
+  "description": "One portal for jobs across Ireland, Cyprus and Malta, filterable by country, region and visa sponsorship signal.",
   "type": "module",
   "engines": {
     "node": ">=22.5"
@@ -10,6 +10,7 @@
   "scripts": {
     "start": "node --no-warnings server.js",
     "refresh": "node --no-warnings scripts/refresh-once.js",
-    "test": "node --test"
+    "test": "node --test",
+    "backfill": "node --no-warnings scripts/backfill.js"
   }
 }
