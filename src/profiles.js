@@ -20,67 +20,67 @@ export const PROFILES = [
     id: 'acca',
     group: 'practice',
     name: 'ACCA / qualified accountant',
-    queries: ['ACCA', 'qualified accountant', 'newly qualified accountant', 'part qualified accountant'],
-    titleTerms: ['acca', 'aca', 'cima', 'cpa', 'accountant', 'qualified accountant'],
+    queries: ['ACCA', 'qualified accountant', 'newly qualified accountant', 'part qualified accountant', 'ACA', 'CIMA', 'chartered accountant'],
+    titleTerms: ['acca', 'aca', 'cima', 'cpa', 'accountant', 'accountancy', 'qualified accountant', 'chartered accountant'],
   },
   {
     id: 'accountant',
     group: 'practice',
     name: 'Management / financial accountant',
-    queries: ['management accountant', 'financial accountant', 'group accountant', 'project accountant'],
-    titleTerms: ['management accountant', 'financial accountant', 'group accountant', 'cost accountant', 'project accountant', 'accountant'],
+    queries: ['management accountant', 'financial accountant', 'group accountant', 'project accountant', 'senior accountant', 'staff accountant', 'fund accountant', 'corporate accountant'],
+    titleTerms: ['management accountant', 'financial accountant', 'group accountant', 'cost accountant', 'project accountant', 'fund accountant', 'corporate accountant', 'staff accountant', 'accountant'],
   },
   {
     id: 'controller',
     group: 'practice',
     name: 'Financial controller / finance manager',
-    queries: ['financial controller', 'finance manager', 'head of finance', 'finance business partner'],
-    titleTerms: ['financial controller', 'finance controller', 'finance manager', 'head of finance', 'finance director', 'business partner'],
+    queries: ['financial controller', 'finance manager', 'head of finance', 'finance business partner', 'chief financial officer', 'CFO', 'head of accounting', 'financial reporting manager', 'group finance'],
+    titleTerms: ['financial controller', 'finance controller', 'group controller', 'controller', 'finance manager', 'accounting manager', 'head of finance', 'head of accounting', 'head of accounts', 'finance director', 'financial director', 'chief financial officer', 'cfo', 'finance lead', 'business partner'],
   },
   {
     id: 'practicegen',
     group: 'practice',
     name: 'Accountancy practice',
-    queries: ['accountancy practice', 'accounts senior', 'client manager accountancy'],
-    titleTerms: ['practice', 'accounts senior', 'client manager', 'accounts assistant', 'bookkeeper', 'semi senior'],
+    queries: ['accountancy practice', 'accounts senior', 'client manager accountancy', 'bookkeeper', 'accounts assistant', 'accounting supervisor', 'corporate services'],
+    titleTerms: ['practice', 'accounts senior', 'client manager', 'accounts assistant', 'accounts administrator', 'accounting administrator', 'accounting supervisor', 'accounting officer', 'accounting associate', 'accounting', 'bookkeeper', 'bookkeeping', 'semi senior', 'corporate services'],
   },
 
   {
     id: 'tax',
     group: 'tax',
     name: 'Tax',
-    queries: ['tax', 'tax consultant', 'corporate tax', 'tax manager', 'tax senior'],
-    titleTerms: ['tax', 'vat', 'taxation'],
+    queries: ['tax', 'tax consultant', 'corporate tax', 'tax manager', 'tax senior', 'transfer pricing', 'VAT', 'indirect tax', 'international tax', 'tax compliance'],
+    titleTerms: ['tax', 'vat', 'taxation', 'transfer pricing', 'tax compliance', 'indirect tax'],
   },
 
   {
     id: 'audit',
     group: 'audit',
     name: 'Audit',
-    queries: ['audit', 'auditor', 'audit senior', 'internal audit', 'external audit'],
-    titleTerms: ['audit', 'auditor', 'assurance'],
+    queries: ['audit', 'auditor', 'audit senior', 'internal audit', 'external audit', 'audit manager', 'statutory audit', 'assurance', 'risk and compliance'],
+    titleTerms: ['audit', 'auditor', 'auditing', 'assurance', 'compliance officer', 'internal control'],
   },
 
   {
     id: 'payroll',
     group: 'financeops',
     name: 'Payroll',
-    queries: ['payroll', 'payroll manager', 'payroll specialist'],
+    queries: ['payroll', 'payroll manager', 'payroll specialist', 'payroll administrator'],
     titleTerms: ['payroll'],
   },
   {
     id: 'analyst',
     group: 'financeops',
     name: 'Financial analyst / FP&A',
-    queries: ['financial analyst', 'FP&A', 'commercial analyst'],
-    titleTerms: ['financial analyst', 'fp&a', 'commercial analyst', 'finance analyst'],
+    queries: ['financial analyst', 'FP&A', 'commercial analyst', 'finance analyst', 'financial planning and analysis', 'business controller', 'financial reporting'],
+    titleTerms: ['financial analyst', 'fp&a', 'commercial analyst', 'finance analyst', 'financial planning', 'financial reporting', 'reporting analyst', 'business controller'],
   },
   {
     id: 'ledger',
     group: 'financeops',
     name: 'Accounts payable / receivable / credit',
-    queries: ['accounts payable', 'accounts receivable', 'credit control'],
-    titleTerms: ['accounts payable', 'accounts receivable', 'credit control', 'purchase ledger', 'sales ledger'],
+    queries: ['accounts payable', 'accounts receivable', 'credit control', 'billing specialist', 'reconciliations', 'treasury'],
+    titleTerms: ['accounts payable', 'accounts receivable', 'credit control', 'purchase ledger', 'sales ledger', 'billing', 'reconciliation', 'treasury', 'accounts clerk', 'finance officer', 'finance administrator', 'finance assistant'],
   },
 
   {
@@ -170,8 +170,10 @@ export const GROUP_BY_KEY = Object.fromEntries(GROUPS.map((g) => [g.key, g]))
 
 // Terms have to match whole words. Without this, "erp" matches "Enterprise" and
 // "vat" matches "innovators", which quietly fills the list with sales roles.
+// A trailing plural is allowed, so "Reconciliations Officer" still counts as a
+// reconciliation role and "Accounts Payable Specialists" still counts as one.
 const boundary = (term) =>
-  new RegExp(`(^|[^a-z0-9])${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^a-z0-9]|$)`, 'i')
+  new RegExp(`(^|[^a-z0-9])${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:s|es)?([^a-z0-9]|$)`, 'i')
 
 const COMPILED = PROFILES.map((p) => ({
   id: p.id,

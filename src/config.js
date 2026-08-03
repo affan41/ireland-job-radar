@@ -2,6 +2,7 @@ import { readFileSync, existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { DEFAULT_COMPANIES } from './sources/ats.js'
+import { MNC_EMPLOYERS } from './mncs.js'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const FILE = join(ROOT, 'config.json')
@@ -14,10 +15,10 @@ const defaults = {
   countries: ['ie', 'cy', 'mt'],
   refreshOnStart: true,
   pruneAfterDays: 30,
-  careerjet: { enabled: true, maxPages: 3, affid: null },
-  accaCareers: { enabled: true, maxPages: 25 },
-  adzuna: { enabled: true, appId: null, appKey: null, maxPages: 2 },
-  jobsIreland: { enabled: true, latestPageSize: 250, latestPages: 4, partTimeLimit: 250 },
+  careerjet: { enabled: true, maxPages: 12, affid: null },
+  accaCareers: { enabled: true, maxPages: 40 },
+  adzuna: { enabled: true, appId: null, appKey: null, maxPages: 8 },
+  jobsIreland: { enabled: true, latestPageSize: 250, latestPages: 8, partTimeLimit: 500 },
   officialEmployers: {
     enabled: true,
     apple: true,
@@ -35,6 +36,7 @@ const defaults = {
     eyMaxPages: 10,
   },
   employers: { enabled: true, companies: DEFAULT_COMPANIES },
+  mncEmployers: { enabled: true, companies: MNC_EMPLOYERS },
   remoteBoards: { enabled: true },
 }
 

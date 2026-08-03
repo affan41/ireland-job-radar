@@ -8,6 +8,7 @@ import { fetchAdzuna } from './sources/adzuna.js'
 import { fetchJobsIreland } from './sources/jobsireland.js'
 import { fetchOfficialEmployers } from './sources/official-employers.js'
 import { fetchATS } from './sources/ats.js'
+import { fetchPlatformEmployers } from './sources/platforms.js'
 import { fetchRemote } from './sources/remote.js'
 
 let running = false
@@ -96,6 +97,13 @@ export async function runRefresh({ quiet = false } = {}) {
       note('Employer boards')
       const r = await fetchATS({ companies: config.employers.companies, onProgress: note })
       collected.push(...r.jobs)
+      errors.push(...r.errors)
+    }
+
+    if (config.mncEmployers.enabled) {
+      note('Multinational careers systems')
+      const r = await fetchPlatformEmployers({ companies: config.mncEmployers.companies, onProgress: note })
+      collected.push(...r.jobs.map((j) => ({ country: 'ie', ...j })))
       errors.push(...r.errors)
     }
 
