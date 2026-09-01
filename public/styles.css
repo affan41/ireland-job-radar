@@ -316,6 +316,7 @@ a { color: inherit; }
   border-radius: var(--radius);
 }
 .empty-state h3 { font-size: 15px; color: var(--ink); margin-bottom: 6px; }
+.empty-state .btn { margin-top: 14px; }
 
 @media (max-width: 880px) {
   .layout { grid-template-columns: 1fr; }
@@ -381,3 +382,13 @@ a { color: inherit; }
   .countries { order: 3; flex-basis: 100%; justify-content: flex-start; flex-wrap: wrap; }
   .topbar { flex-wrap: wrap; }
 }
+
+/* Saved views sit in the same tab strip as the countries but are not places, so
+   they get a divider and a slightly different weight. */
+.countries .country.view {
+  border-left: 1px solid var(--line);
+  margin-left: 6px;
+  padding-left: 12px;
+}
+.countries .country.view .cname { font-weight: 500; }
+.countries .country.view.on { background: var(--accent-soft); color: var(--accent); }

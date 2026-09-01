@@ -6,7 +6,7 @@
 import { getJSON } from './http.js'
 
 const EUROPE_OK = /\b(ireland|irish|dublin|emea|europe|european|eu\b|worldwide|anywhere|global)\b/i
-const US_ONLY = /\b(us only|usa only|united states only|us[- ]based only|must reside in the (us|united states))\b/i
+const US_ONLY = /\b(us only|usa only|united states only|us[- ]based only|must reside in the (us|united states)|remote in (the )?(us|usa|united states)|\(us\)|us[- ]remote)\b/i
 const US_LOCK = /^\s*(united states|usa|us)\s*$/i
 
 function europeEligible(...fields) {
@@ -26,7 +26,7 @@ export async function fetchRemote({ onProgress } = {}) {
     const d = await getJSON('https://remotive.com/api/remote-jobs?limit=300')
     let n = 0
     for (const j of d.jobs || []) {
-      if (!europeEligible(j.candidate_required_location)) continue
+      if (!europeEligible(j.candidate_required_location, j.title)) continue
       out.push({
         source: 'remote',
         sourceDetail: 'remotive',
@@ -58,7 +58,7 @@ export async function fetchRemote({ onProgress } = {}) {
       for (const j of batch) {
         const restrictions = (j.locationRestrictions || []).join(', ')
         // No stated restriction on a remote-first board means anywhere.
-        if (restrictions && !europeEligible(restrictions)) continue
+        if (!europeEligible(restrictions || 'worldwide', j.title)) continue
         out.push({
           source: 'remote',
           sourceDetail: 'himalayas',

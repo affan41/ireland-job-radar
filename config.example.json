@@ -51,6 +51,13 @@
     "eyMaxPages": 10
   },
 
+  "localSearch": {
+    "_comment": "Town-by-town searching for where you actually live, plus work-from-home searches. Change cities if you move; also update regionKeys in src/views.js.",
+    "enabled": true,
+    "cities": ["Limerick", "Castletroy", "Raheen", "Annacotty", "Newcastle West", "Shannon", "Ennis", "Nenagh", "Adare"],
+    "maxPages": 4
+  },
+
   "employers": {
     "_comment": "Public careers boards. Add any company here to follow it directly.",
     "enabled": true,

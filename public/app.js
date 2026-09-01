@@ -2,6 +2,7 @@ const $ = (sel) => document.querySelector(sel)
 
 const state = {
   country: 'ie',
+  view: '',
   sponsorship: new Set(),
   regions: new Set(),
   groups: new Set(),
@@ -34,7 +35,7 @@ function loadState() {
   try {
     const raw = JSON.parse(localStorage.getItem(STORE_KEY) || '{}')
     for (const k of ['sponsorship', 'regions', 'groups', 'modes', 'types', 'sources']) if (Array.isArray(raw[k])) state[k] = new Set(raw[k])
-    for (const k of ['q', 'days', 'minScore', 'salaryMin', 'sort', 'country']) if (raw[k] != null) state[k] = raw[k]
+    for (const k of ['q', 'days', 'minScore', 'salaryMin', 'sort', 'country', 'view']) if (raw[k] != null) state[k] = raw[k]
     if (typeof raw.savedOnly === 'boolean') state.savedOnly = raw.savedOnly
     // Existing users had a narrower seven-day default. Widen it once without
     // disturbing their chosen regions, categories or shortlist preference.
@@ -44,7 +45,10 @@ function loadState() {
 
 function params(extra = {}) {
   const p = new URLSearchParams()
-  if (state.country) p.set('countries', state.country)
+  // A view pins its own geography, remote work included, so it replaces the
+  // country switch rather than sitting alongside it.
+  if (state.view) p.set('view', state.view)
+  else if (state.country) p.set('countries', state.country)
   if (state.sponsorship.size) p.set('sponsorship', [...state.sponsorship].join(','))
   if (state.regions.size) p.set('regions', [...state.regions].join(','))
   if (state.groups.size) p.set('groups', [...state.groups].join(','))
@@ -179,14 +183,35 @@ function renderCountries() {
 
   for (const c of meta.countries) {
     const btn = document.createElement('button')
-    btn.className = `country${state.country === c.code ? ' on' : ''}`
+    btn.className = `country${state.country === c.code && !state.view ? ' on' : ''}`
     btn.innerHTML = `<span class="flag">${FLAGS[c.code] || ''}</span>
       <span class="cname">${esc(c.name)}</span>
       <span class="cn">${counts[c.code] || 0}</span>`
     btn.addEventListener('click', () => {
-      if (state.country === c.code) return
+      if (state.country === c.code && !state.view) return
       state.country = c.code
+      state.view = ''
       // Regions belong to one country, so carrying them across would show nothing.
+      state.regions.clear()
+      state.page = 0
+      refreshAll()
+    })
+    host.appendChild(btn)
+  }
+
+  // Saved views sit after the countries, separated so they do not read as one.
+  const viewCounts = meta.facets.byView || {}
+  for (const v of meta.views || []) {
+    const btn = document.createElement('button')
+    btn.className = `country view${state.view === v.key ? ' on' : ''}`
+    btn.innerHTML = `<span class="flag">\u{1F393}</span>
+      <span class="cname">${esc(v.name)}</span>
+      <span class="cn">${viewCounts[v.key] || 0}</span>`
+    btn.addEventListener('click', () => {
+      if (state.view === v.key) return
+      state.view = v.key
+      state.country = v.country || state.country
+      // The view decides the geography, so a leftover county filter would fight it.
       state.regions.clear()
       state.page = 0
       refreshAll()
@@ -196,8 +221,19 @@ function renderCountries() {
 }
 
 function renderPermitNote() {
-  const note = (meta.permitNotes || {})[state.country]
   const host = $('#permitNote')
+
+  if (state.view) {
+    const v = (meta.views || []).find((x) => x.key === state.view)
+    if (v?.note) {
+      host.hidden = false
+      host.innerHTML = `<strong>${esc(v.name)}.</strong> ${esc(v.note)}`
+        + (v.noteLink ? ` <a href="${esc(v.noteLink.href)}" target="_blank" rel="noopener">${esc(v.noteLink.text)}</a>` : '')
+      return
+    }
+  }
+
+  const note = (meta.permitNotes || {})[state.country]
   if (!note) { host.hidden = true; return }
   host.hidden = false
   host.innerHTML = `<strong>Working in ${esc(note.name)} on a permit.</strong>
@@ -325,6 +361,51 @@ function jobCard(j) {
   return el
 }
 
+const countFor = (qs) =>
+  fetch(`/api/jobs?${qs}&limit=1`).then((r) => r.json()).then((d) => d.total).catch(() => 0)
+
+// An empty list is nearly always one filter doing the damage rather than an empty
+// database. Work out which one, say so plainly, and offer to undo it.
+async function renderEmptyState(host) {
+  const [ignoringDate, ignoringEverything] = await Promise.all([
+    countFor(params({ days: 0 })),
+    countFor(`${state.country ? `countries=${state.country}&` : ''}days=0&minScore=0`),
+  ])
+
+  if (ignoringEverything === 0) {
+    host.innerHTML = `<div class="empty-state">
+      <h3>There are no jobs stored yet</h3>
+      <p>Press "Refresh now" in the top right to collect some. The first run takes a few minutes.</p>
+    </div>`
+    return
+  }
+
+  if (ignoringDate > 0 && Number(state.days) > 0) {
+    const label = $('#days').selectedOptions[0]?.textContent || `${state.days} days`
+    host.innerHTML = `<div class="empty-state">
+      <h3>Nothing posted in the last ${label.toLowerCase()}</h3>
+      <p>Your other filters match <strong>${ignoringDate.toLocaleString('en-IE')}</strong> older listings.
+      The collection may not have run for a while.</p>
+      <button class="btn" id="widenDate">Show these ${ignoringDate.toLocaleString('en-IE')} jobs</button>
+    </div>`
+    $('#widenDate').addEventListener('click', () => {
+      state.days = '0'
+      $('#days').value = '0'
+      state.page = 0
+      refreshAll()
+    })
+    return
+  }
+
+  host.innerHTML = `<div class="empty-state">
+    <h3>Nothing matches those filters</h3>
+    <p>There are <strong>${ignoringEverything.toLocaleString('en-IE')}</strong> jobs stored.
+    Try lowering the match strength, clearing a region, or resetting the filters.</p>
+    <button class="btn" id="resetFromEmpty">Reset all filters</button>
+  </div>`
+  $('#resetFromEmpty').addEventListener('click', () => $('#resetAll').click())
+}
+
 async function loadJobs() {
   const res = await fetch(`/api/jobs?${params()}`)
   const { total, rows, limit, offset } = await res.json()
@@ -333,10 +414,7 @@ async function loadJobs() {
   host.innerHTML = ''
 
   if (!rows.length) {
-    host.innerHTML = `<div class="empty-state">
-      <h3>Nothing matches those filters</h3>
-      <p>Try widening the posted window, lowering the match strength, or clearing a region.</p>
-    </div>`
+    await renderEmptyState(host)
     $('#count').textContent = 'No results'
     $('#pager').innerHTML = ''
     return

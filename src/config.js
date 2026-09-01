@@ -3,6 +3,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { DEFAULT_COMPANIES } from './sources/ats.js'
 import { MNC_EMPLOYERS } from './mncs.js'
+import { DEFAULT_LOCAL_SEARCH } from './sources/local.js'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const FILE = join(ROOT, 'config.json')
@@ -35,6 +36,9 @@ const defaults = {
     deloitteMaxPages: 10,
     eyMaxPages: 10,
   },
+  // City-level searching for wherever you are actually living, plus the
+  // work-from-home searches that go with it.
+  localSearch: { ...DEFAULT_LOCAL_SEARCH },
   employers: { enabled: true, companies: DEFAULT_COMPANIES },
   mncEmployers: { enabled: true, companies: MNC_EMPLOYERS },
   remoteBoards: { enabled: true },

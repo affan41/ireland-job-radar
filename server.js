@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 
 import { config } from './src/config.js'
 import { allRegions, PROVINCE_ORDER, COUNTRIES } from './src/regions.js'
+import { VIEWS, VIEW_BY_KEY } from './src/views.js'
 import { SPONSORSHIP_LEVELS, PERMIT_NOTES } from './src/sponsorship.js'
 import { GROUPS, PROFILES } from './src/profiles.js'
 import { queryJobs, facets, setSaved, setHidden, stats, lastRun, recentRuns } from './src/db.js'
@@ -30,8 +31,12 @@ const list = (v) => (v ? String(v).split(',').map((s) => s.trim()).filter(Boolea
 
 function filtersFrom(url) {
   const p = url.searchParams
+  const view = VIEW_BY_KEY[p.get('view')] ? p.get('view') : ''
   return {
-    countries: list(p.get('countries')),
+    view,
+    // A view sets its own geography, including remote work that belongs to no
+    // country, so the country switch is left out while one is active.
+    countries: view ? [] : list(p.get('countries')),
     sponsorship: list(p.get('sponsorship')),
     regions: list(p.get('regions')),
     provinces: list(p.get('provinces')),
@@ -70,6 +75,7 @@ const server = createServer(async (req, res) => {
         regions: allRegions(),
         provinceOrder: PROVINCE_ORDER,
         countries: COUNTRIES.map((c) => ({ code: c.code, name: c.name, provinces: c.provinces })),
+        views: VIEWS.map((v) => ({ key: v.key, name: v.name, country: v.country, note: v.note, noteLink: v.noteLink })),
         sponsorshipLevels: SPONSORSHIP_LEVELS,
         permitNotes: PERMIT_NOTES,
         groups: GROUPS,

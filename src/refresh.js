@@ -3,6 +3,7 @@ import { PROFILES } from './profiles.js'
 import { buildJob } from './normalise.js'
 import { upsertJob, startRun, finishRun, pruneStale, db } from './db.js'
 import { fetchCareerjet } from './sources/careerjet.js'
+import { fetchLocal } from './sources/local.js'
 import { fetchAccaCareers } from './sources/acca.js'
 import { fetchAdzuna } from './sources/adzuna.js'
 import { fetchJobsIreland } from './sources/jobsireland.js'
@@ -54,6 +55,24 @@ export async function runRefresh({ quiet = false } = {}) {
       note('ACCA Careers: searching Ireland')
       const r = await fetchAccaCareers({
         maxPages: config.accaCareers.maxPages,
+        onProgress: note,
+      })
+      collected.push(...r.jobs)
+      errors.push(...r.errors)
+    }
+
+    if (config.localSearch?.enabled) {
+      const ls = config.localSearch
+      note(`Local searches: ${ls.cities.length} towns around ${ls.cities[0]}, plus work from home`)
+      const r = await fetchLocal({
+        cities: ls.cities,
+        country: ls.country,
+        locale: ls.locale,
+        remoteLocation: ls.remoteLocation,
+        maxPages: ls.maxPages,
+        concurrency: ls.concurrency,
+        delayMs: ls.delayMs,
+        affid: config.careerjet.affid,
         onProgress: note,
       })
       collected.push(...r.jobs)

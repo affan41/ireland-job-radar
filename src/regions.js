@@ -303,11 +303,21 @@ export function allRegions() {
 }
 
 // Detects whether a listing is onsite, hybrid or fully remote from its text.
+// "Remote" in an advert does not always mean remote working. A rural site is a
+// "remote location", and a benefits list can mention remote work for a role that is
+// not itself remote. Strip those readings out before deciding.
+const REMOTE_PLACE = /\bremote\s+(location|area|site|region|village|island|part|places?|working environment)\b/gi
+
 export function detectWorkMode(title, description, locationRaw) {
-  const hay = `${title || ''} ${locationRaw || ''} ${description || ''}`.toLowerCase()
+  const hay = `${title || ''} ${locationRaw || ''} ${description || ''}`
+    .toLowerCase()
+    .replace(REMOTE_PLACE, ' ')
   if (/\bhybrid\b/.test(hay)) return 'hybrid'
-  if (/\b(fully remote|100% remote|remote[- ]first|work from home|wfh)\b/.test(hay)) return 'remote'
-  if (/\bremote\b/.test(hay)) return 'remote'
+  if (/\b(fully remote|100% remote|remote[- ]first|work from home|wfh|remote role|remote position|remote job|remotely)\b/.test(hay)) return 'remote'
+  // A bare "remote" is only trusted in the title or the location, where it is
+  // describing the job, not buried in a paragraph of perks.
+  const strong = `${title || ''} ${locationRaw || ''}`.toLowerCase().replace(REMOTE_PLACE, ' ')
+  if (/\bremote\b/.test(strong)) return 'remote'
   if (/\b(on[- ]?site|onsite|in[- ]office)\b/.test(hay)) return 'onsite'
   return 'unspecified'
 }

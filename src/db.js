@@ -1,4 +1,5 @@
 import { DatabaseSync } from 'node:sqlite'
+import { VIEWS, viewClause } from './views.js'
 import { mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -89,6 +90,9 @@ if (!jobColumns.has('country')) {
   db.exec("ALTER TABLE jobs ADD COLUMN country TEXT")
   db.exec("CREATE INDEX IF NOT EXISTS idx_jobs_country ON jobs(country)")
 }
+if (!jobColumns.has('career_role')) {
+  db.exec('ALTER TABLE jobs ADD COLUMN career_role INTEGER DEFAULT 0')
+}
 if (!jobColumns.has('sponsorship')) {
   db.exec("ALTER TABLE jobs ADD COLUMN sponsorship TEXT DEFAULT 'unknown'")
   db.exec("ALTER TABLE jobs ADD COLUMN sponsorship_reasons TEXT")
@@ -124,9 +128,9 @@ const upsertStmt = db.prepare(`
     id, title, company, location_raw, region_key, county_name, province, country,
     url, source, source_detail, description,
     salary_text, salary_min, salary_max, salary_currency, salary_period,
-    posted_at, work_mode, employment_type, sponsorship, sponsorship_reasons,
+    posted_at, work_mode, employment_type, career_role, sponsorship, sponsorship_reasons,
     profiles, groups, score, first_seen, last_seen
-  ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+  ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   ON CONFLICT(id) DO UPDATE SET
     last_seen   = excluded.last_seen,
     url         = CASE WHEN ${preferredSource} THEN excluded.url ELSE jobs.url END,
@@ -144,6 +148,7 @@ const upsertStmt = db.prepare(`
     country     = excluded.country,
     work_mode   = excluded.work_mode,
     employment_type = excluded.employment_type,
+    career_role = excluded.career_role,
     sponsorship = excluded.sponsorship,
     sponsorship_reasons = excluded.sponsorship_reasons,
     profiles    = excluded.profiles,
@@ -184,6 +189,7 @@ export function upsertJob(j) {
     j.postedAt ?? null,
     j.workMode ?? null,
     j.employmentType ?? 'unspecified',
+    j.careerRole ?? 0,
     j.sponsorship ?? 'unknown',
     (j.sponsorshipReasons || []).join(' · ') || null,
     (j.profiles || []).join(','),
@@ -234,6 +240,15 @@ function buildWhere(opts = {}, skip = null) {
     where.push(`(j.country IN (${opts.countries.map(() => '?').join(',')})
       OR (j.country IS NULL AND j.region_key = 'remote'))`)
     params.push(...opts.countries)
+  }
+  // A saved view pins its own location and contract rules on top of whatever the
+  // sidebar is asking for.
+  if (opts.view) {
+    const vc = viewClause(opts.view)
+    if (vc) {
+      where.push(`(${vc.sql})`)
+      params.push(...vc.params)
+    }
   }
   if (skip !== 'sponsorship' && opts.sponsorship?.length) {
     where.push(`COALESCE(j.sponsorship, 'unknown') IN (${opts.sponsorship.map(() => '?').join(',')})`)
@@ -352,12 +367,23 @@ export function facets(opts = {}) {
   // country filter itself lifted out of the query.
   const byCountry = {}
   {
-    const { clause, params } = buildWhere({ ...opts, countries: [] })
+    // The view is lifted out as well as the country switch, otherwise every country
+    // tab would report the size of whichever view happens to be open.
+    const { clause, params } = buildWhere({ ...opts, countries: [], view: '' })
     const rows = db.prepare(`SELECT j.country AS v, COUNT(*) AS n ${JOINS} ${clause} GROUP BY j.country`).all(...params)
     for (const r of rows) byCountry[r.v ?? 'unknown'] = r.n
   }
 
+  // Each saved view carries its own tab count, worked out the same way the country
+  // tabs are: current filters, minus the country switch and minus the view itself.
+  const byView = {}
+  for (const v of VIEWS) {
+    const { clause, params } = buildWhere({ ...opts, countries: [], view: v.key })
+    byView[v.key] = db.prepare(`SELECT COUNT(*) AS n ${JOINS} ${clause}`).get(...params).n
+  }
+
   return {
+    byView,
     byRegion: tally('region', 'j.region_key'),
     byGroup,
     bySource,

@@ -18,8 +18,9 @@ cd ~/ireland-job-radar && npm start
 
 Then open http://localhost:8099
 
-The three country tabs across the top switch between Ireland, Cyprus and Malta. Each
-carries its own region list and its own counts.
+The tabs across the top switch between Ireland, Cyprus and Malta, each with its own
+region list and counts, followed by **Limerick part time**, a saved view for study
+work rather than a country.
 
 The first launch finds an empty database and runs an initial collection, which takes
 two or three minutes. After that it refreshes itself every 45 minutes while the
@@ -60,6 +61,7 @@ over aggregator redirects, and the card shows when another source also carries i
 | Source | Key needed | What it gives you |
 | --- | --- | --- |
 | Careerjet | No | The bulk of it, run separately against the Irish, Cypriot and Maltese indexes. Aggregates IrishJobs, Jobs.ie, the recruitment agencies and most employer sites |
+| Local searches | No | Careerjet again, but asked town by town rather than country-wide, for Limerick and everywhere within a commute, plus a set of work-from-home searches. A national sweep sorted by date never reaches more than a handful of Limerick listings; asking for Limerick directly returns several hundred |
 | ACCA Careers | No | Finance and accountancy vacancies from ACCA's official careers board, searched directly for Ireland |
 | JobsIreland | No | Independent vacancies from the Irish government's Department of Social Protection service, including its complete current part-time search |
 | Major employer career sites | No | Ireland vacancies read directly from Apple, Amazon, Microsoft, KPMG, Deloitte, PwC and EY, with official application links rather than aggregator redirects |
@@ -102,6 +104,46 @@ without waiting for a refresh to see them again:
 ```bash
 cd ~/ireland-job-radar && npm run backfill
 ```
+
+## The Limerick part time tab
+
+A saved view rather than a country. It shows work you could take alongside a course
+at the University of Limerick, which means two things at once:
+
+- Anything in **Limerick**, or in Castletroy, Raheen, Annacotty, Shannon, Ennis,
+  Nenagh, Adare or Newcastle West.
+- Anything **remote**, wherever the employer sits, since a job with no address is a
+  job you can do from a room in Limerick.
+
+What survives the filter, in order:
+
+1. Explicit full-time and contract roles are dropped, because a Stamp 2 student
+   permission does not allow them.
+2. What is left has to look like student work: the advert says part-time or
+   seasonal, or the role falls in the **Student part-time jobs** category. Without
+   this second step "not full-time" quietly admits every senior role, because most
+   adverts never state their hours at all.
+3. Career titles are dropped as well, so a Head of Fund Accounting that happens to
+   mention part-time hours in its benefits does not appear. The exception is an
+   advert that states plainly that the role is part-time: that is believed over any
+   reading of the title, so a part-time retail consultant, or a part-time accounts
+   role, still shows.
+
+The bar under the tab carries the hours you are allowed: 20 a week during term and
+40 a week in the holiday periods on Stamp 2. That is a reminder, not legal advice.
+Check the conditions printed on your own permission before applying.
+
+Two things make this tab find work the rest of the radar missed:
+
+- **Town-level searching.** The national sweep is sorted by date and runs out of
+  pages long before a city the size of Limerick gets a fair showing.
+- **Search intent.** A job titled plainly "Retail Assistant" used to be discarded,
+  because the student categories only accepted a listing whose title actually said
+  "part time". When the collector has gone and asked Careerjet for part-time retail
+  work in Limerick, the question is its own evidence, so the result is kept.
+
+To point this at somewhere else, edit `localSearch.cities` in `config.json` and
+change `regionKeys` in `src/views.js`.
 
 ## Filters
 
