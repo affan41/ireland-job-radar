@@ -11,6 +11,10 @@ import { fetchOfficialEmployers } from './sources/official-employers.js'
 import { fetchATS } from './sources/ats.js'
 import { fetchPlatformEmployers } from './sources/platforms.js'
 import { fetchRemote } from './sources/remote.js'
+import { fetchTesco } from './sources/tesco.js'
+import { fetchLocalSites } from './sources/local-sites.js'
+import { fetchJobAlert } from './sources/jobalert.js'
+import { fetchRetailEmployers } from './sources/retail.js'
 
 let running = false
 let progress = { active: false, step: '', log: [] }
@@ -72,9 +76,37 @@ export async function runRefresh({ quiet = false } = {}) {
         maxPages: ls.maxPages,
         concurrency: ls.concurrency,
         delayMs: ls.delayMs,
+        brands: ls.brands,
+        brandCities: ls.brandCities,
+        shops: ls.shops,
+        shopLocation: ls.shopLocation,
         affid: config.careerjet.affid,
         onProgress: note,
       })
+      collected.push(...r.jobs)
+      errors.push(...r.errors)
+    }
+
+    if (config.tesco?.enabled) {
+      note('Tesco Ireland: official store vacancies')
+      const r = await fetchTesco({ maxPages: config.tesco.maxPages, onProgress: note })
+      collected.push(...r.jobs)
+      errors.push(...r.errors)
+    }
+
+    if (config.localSites?.enabled) {
+      const r = await fetchLocalSites({onProgress: note})
+      collected.push(...r.jobs)
+      errors.push(...r.errors)
+    }
+    if (config.jobAlert?.enabled) {
+      const r = await fetchJobAlert({maxPages: config.jobAlert.maxPages, onProgress: note})
+      collected.push(...r.jobs)
+      errors.push(...r.errors)
+    }
+
+    if (config.retailEmployers?.enabled) {
+      const r = await fetchRetailEmployers({ providers: config.retailEmployers.providers, onProgress: note })
       collected.push(...r.jobs)
       errors.push(...r.errors)
     }

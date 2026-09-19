@@ -219,6 +219,9 @@ a { color: inherit; }
 .results { display: flex; flex-direction: column; gap: 8px; }
 
 .job {
+  display: grid;
+  grid-template-columns: 135px minmax(0, 1fr);
+  gap: 18px;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -392,3 +395,19 @@ a { color: inherit; }
 }
 .countries .country.view .cname { font-weight: 500; }
 .countries .country.view.on { background: var(--accent-soft); color: var(--accent); }
+
+.job-content { min-width: 0; }
+.job-distance { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; padding-right: 14px; border-right: 1px solid var(--line); font-size: 11px; color: var(--ink-soft); }
+.distance-value { font-size: 22px; line-height: 1.2; font-weight: 600; color: var(--accent); }
+.job-distance.unknown .distance-value { font-size: 14px; color: var(--ink-soft); }
+.distance-basis { line-height: 1.4; }
+.job-distance a { margin-top: 5px; color: var(--accent); }
+.distance-note { margin: 0 0 16px; font-size: 12px; line-height: 1.6; color: var(--ink-soft); }
+.distance-note a { color: inherit; }
+.nearby-options { padding: 0 0 12px; }
+@media (max-width: 640px) {
+  .job { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .job-distance { flex-direction: row; align-items: center; flex-wrap: wrap; border-right: 0; border-bottom: 1px solid var(--line); padding: 0 0 10px; gap: 6px 10px; }
+  .distance-value { font-size: 18px; }
+  .job-distance a { margin: 0 0 0 auto; }
+}

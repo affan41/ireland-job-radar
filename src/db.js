@@ -1,5 +1,6 @@
 import { DatabaseSync } from 'node:sqlite'
 import { VIEWS, viewClause } from './views.js'
+import { estimateDistance } from './distance.js'
 import { mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -83,6 +84,9 @@ db.exec(`
 // Existing databases pre-date some fields. Keep upgrades automatic so a user can
 // pull a newer version and start it without rebuilding or losing shortlists.
 const jobColumns = new Set(db.prepare('PRAGMA table_info(jobs)').all().map((c) => c.name))
+for (const column of ['latitude', 'longitude']) {
+  if (!jobColumns.has(column)) db.exec(`ALTER TABLE jobs ADD COLUMN ${column} REAL`)
+}
 if (!jobColumns.has('employment_type')) {
   db.exec("ALTER TABLE jobs ADD COLUMN employment_type TEXT DEFAULT 'unspecified'")
 }
@@ -129,10 +133,12 @@ const upsertStmt = db.prepare(`
     url, source, source_detail, description,
     salary_text, salary_min, salary_max, salary_currency, salary_period,
     posted_at, work_mode, employment_type, career_role, sponsorship, sponsorship_reasons,
-    profiles, groups, score, first_seen, last_seen
-  ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    profiles, groups, score, first_seen, last_seen, latitude, longitude
+  ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   ON CONFLICT(id) DO UPDATE SET
     last_seen   = excluded.last_seen,
+    latitude    = COALESCE(excluded.latitude, jobs.latitude),
+    longitude   = COALESCE(excluded.longitude, jobs.longitude),
     url         = CASE WHEN ${preferredSource} THEN excluded.url ELSE jobs.url END,
     source      = CASE WHEN ${preferredSource} THEN excluded.source ELSE jobs.source END,
     source_detail = CASE WHEN ${preferredSource} THEN excluded.source_detail ELSE jobs.source_detail END,
@@ -197,6 +203,8 @@ export function upsertJob(j) {
     j.score ?? 0,
     j.seenAt,
     j.seenAt,
+    j.latitude ?? null,
+    j.longitude ?? null,
   )
   upsertSourceStmt.run(j.id, j.source, j.sourceDetail ?? '', j.url, j.seenAt)
   return isNew
@@ -244,7 +252,7 @@ function buildWhere(opts = {}, skip = null) {
   // A saved view pins its own location and contract rules on top of whatever the
   // sidebar is asking for.
   if (opts.view) {
-    const vc = viewClause(opts.view)
+    const vc = viewClause(opts.view, opts)
     if (vc) {
       where.push(`(${vc.sql})`)
       params.push(...vc.params)
@@ -328,7 +336,7 @@ export function queryJobs(opts = {}) {
     ${JOINS} ${clause} ORDER BY ${order} LIMIT ? OFFSET ?
   `).all(...params, limit, offset)
 
-  return { total, rows, limit, offset }
+  return { total, rows: rows.map(j => ({ ...j, distance: estimateDistance(j) })), limit, offset }
 }
 
 // Counts for every filter option, across the whole result set rather than the

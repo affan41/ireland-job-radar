@@ -7,8 +7,13 @@
 
 import { getJSON, sleep } from './http.js'
 import { isIrishLocation } from '../regions.js'
+import { fetchRecruitee } from './recruitee.js'
 
 export const DEFAULT_COMPANIES = [
+  { provider: 'recruitee', slug: 'sparcareers', name: 'SPAR' },
+  { provider: 'recruitee', slug: 'macecareers', name: 'MACE' },
+  { provider: 'recruitee', slug: 'londiscareers', name: 'Londis' },
+  { provider: 'recruitee', slug: 'eurosparcareers', name: 'EUROSPAR' },
   { provider: 'greenhouse', slug: 'stripe', name: 'Stripe' },
   { provider: 'greenhouse', slug: 'intercom', name: 'Intercom' },
   { provider: 'greenhouse', slug: 'datadog', name: 'Datadog' },
@@ -23,6 +28,9 @@ export const DEFAULT_COMPANIES = [
   { provider: 'ashby', slug: 'openai', name: 'OpenAI' },
   { provider: 'ashby', slug: 'wayflyer', name: 'Wayflyer' },
   { provider: 'workable', slug: 'wayflyer', name: 'Wayflyer' },
+  { provider: 'workable', slug: 'kurtgeiger', name: 'Kurt Geiger' },
+  { provider: 'smartrecruiters', slug: 'FrasersGroup', name: 'Frasers Group / Sports Direct' },
+  { provider: 'smartrecruiters', slug: 'Rituals1', name: 'Rituals' },
   { provider: 'smartrecruiters', slug: 'HMGroup', name: 'H&M Group' },
   { provider: 'smartrecruiters', slug: 'JYSK', name: 'JYSK' },
   { provider: 'smartrecruiters', slug: 'Version1', name: 'Version 1' },
@@ -35,6 +43,7 @@ export const DEFAULT_COMPANIES = [
 const isIrish = (locationText) => isIrishLocation(locationText)
 
 const ADAPTERS = {
+  recruitee: fetchRecruitee,
   async greenhouse({ slug, name }) {
     const d = await getJSON(`https://boards-api.greenhouse.io/v1/boards/${slug}/jobs`)
     return (d.jobs || [])
@@ -66,7 +75,7 @@ const ADAPTERS = {
   async workable({ slug, name }) {
     const d = await getJSON(`https://apply.workable.com/api/v1/widget/accounts/${slug}?details=true`)
     return (d.jobs || [])
-      .map((j) => ({ ...j, _loc: [j.city, j.region, j.country].filter(Boolean).join(', ') }))
+      .map((j) => ({ ...j, _loc: [j.city, j.region || j.state, j.country].filter(Boolean).join(', ') }))
       .filter((j) => isIrish(j._loc))
       .map((j) => ({
         title: j.title,
@@ -75,6 +84,8 @@ const ADAPTERS = {
         url: j.url || j.application_url,
         postedAt: j.published_on,
         description: j.description,
+        employmentType: /part[\s_-]*time/i.test(j.employment_type || '') ? 'part_time'
+          : /full[\s_-]*time/i.test(j.employment_type || '') ? 'full_time' : undefined,
       }))
   },
 

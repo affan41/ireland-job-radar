@@ -1,0 +1,391 @@
+[
+  {
+    "name": "Crescent Shopping Centre",
+    "aliases": [
+      "Crescent Shopping Centre",
+      "Crescent SC",
+      "Limerick Crescent"
+    ],
+    "latitude": 52.6403276,
+    "longitude": -8.6458619,
+    "region": "limerick",
+    "source": "https://people.mcdonalds.ie/job-search"
+  },
+  {
+    "name": "Castletroy Shopping Centre",
+    "aliases": [
+      "Castletroy Shopping Centre",
+      "Castletroy Town Centre"
+    ],
+    "latitude": 52.6653545,
+    "longitude": -8.5535989,
+    "region": "limerick",
+    "source": "https://people.mcdonalds.ie/job-search"
+  },
+  {
+    "name": "University of Limerick",
+    "latitude": 52.67935,
+    "longitude": -8.56629,
+    "source": "https://www.geonames.org/8593931"
+  },
+  {
+    "name": "An Muileann gCearr",
+    "latitude": 53.52466,
+    "longitude": -7.3385,
+    "source": "https://www.geonames.org/2962361"
+  },
+  {
+    "name": "Newcastle West",
+    "latitude": 52.44917,
+    "longitude": -9.06111,
+    "source": "https://www.geonames.org/2962283"
+  },
+  {
+    "name": "Blanchardstown",
+    "latitude": 53.38806,
+    "longitude": -6.37556,
+    "source": "https://www.geonames.org/2966110"
+  },
+  {
+    "name": "Sixmilebridge",
+    "latitude": 52.74139,
+    "longitude": -8.77417,
+    "source": "https://www.geonames.org/2961470"
+  },
+  {
+    "name": "Droichead Nua",
+    "latitude": 53.18194,
+    "longitude": -6.79667,
+    "source": "https://www.geonames.org/2962290"
+  },
+  {
+    "name": "D\u00fan Laoghaire",
+    "latitude": 53.29395,
+    "longitude": -6.13586,
+    "source": "https://www.geonames.org/2964506"
+  },
+  {
+    "name": "Cluain Meala",
+    "latitude": 52.355,
+    "longitude": -7.70389,
+    "source": "https://www.geonames.org/2965353"
+  },
+  {
+    "name": "Ballincollig",
+    "latitude": 51.88333,
+    "longitude": -8.58333,
+    "source": "https://www.geonames.org/2966749"
+  },
+  {
+    "name": "South Dublin",
+    "latitude": 53.29026,
+    "longitude": -6.34151,
+    "source": "https://www.geonames.org/6697759"
+  },
+  {
+    "name": "Shanagolden",
+    "latitude": 52.5725,
+    "longitude": -9.1025,
+    "source": "https://www.geonames.org/2961531"
+  },
+  {
+    "name": "Rathfarnham",
+    "latitude": 53.30056,
+    "longitude": -6.28278,
+    "source": "https://www.geonames.org/2961911"
+  },
+  {
+    "name": "Letterkenny",
+    "latitude": 54.95,
+    "longitude": -7.73333,
+    "source": "https://www.geonames.org/2962961"
+  },
+  {
+    "name": "Carrigaline",
+    "latitude": 51.81167,
+    "longitude": -8.39861,
+    "source": "https://www.geonames.org/2965715"
+  },
+  {
+    "name": "Portlaoise",
+    "latitude": 53.03441,
+    "longitude": -7.29979,
+    "source": "https://www.geonames.org/2962026"
+  },
+  {
+    "name": "Kilmallock",
+    "latitude": 52.4,
+    "longitude": -8.57722,
+    "source": "https://www.geonames.org/2963275"
+  },
+  {
+    "name": "Greystones",
+    "latitude": 53.14083,
+    "longitude": -6.06306,
+    "source": "https://www.geonames.org/2963848"
+  },
+  {
+    "name": "Balbriggan",
+    "latitude": 53.60846,
+    "longitude": -6.1831,
+    "source": "https://www.geonames.org/2966794"
+  },
+  {
+    "name": "Abbeyfeale",
+    "latitude": 52.38139,
+    "longitude": -9.3025,
+    "source": "https://www.geonames.org/2967095"
+  },
+  {
+    "name": "Ballysimon",
+    "latitude": 52.64694,
+    "longitude": -8.56778,
+    "source": "https://www.geonames.org/3310135"
+  },
+  {
+    "name": "Templeogue",
+    "latitude": 53.29528,
+    "longitude": -6.30889,
+    "source": "https://www.geonames.org/3315404"
+  },
+  {
+    "name": "Donaghmede",
+    "latitude": 53.39845,
+    "longitude": -6.16179,
+    "source": "https://www.geonames.org/6691033"
+  },
+  {
+    "name": "Caherdavin",
+    "latitude": 52.66363,
+    "longitude": -8.66478,
+    "source": "https://www.geonames.org/7303994"
+  },
+  {
+    "name": "Castletroy",
+    "latitude": 52.67349,
+    "longitude": -8.55333,
+    "source": "https://www.geonames.org/7838907"
+  },
+  {
+    "name": "Dooradoyle",
+    "latitude": 52.6373,
+    "longitude": -8.64113,
+    "source": "https://www.geonames.org/13512976"
+  },
+  {
+    "name": "Tullamore",
+    "latitude": 53.27389,
+    "longitude": -7.48889,
+    "source": "https://www.geonames.org/2961086"
+  },
+  {
+    "name": "Rathkeale",
+    "latitude": 52.52444,
+    "longitude": -8.93806,
+    "source": "https://www.geonames.org/2961905"
+  },
+  {
+    "name": "Celbridge",
+    "latitude": 53.34165,
+    "longitude": -6.54419,
+    "source": "https://www.geonames.org/2965529"
+  },
+  {
+    "name": "Annacotty",
+    "latitude": 52.66768,
+    "longitude": -8.53121,
+    "source": "https://www.geonames.org/3305634"
+  },
+  {
+    "name": "Sandyford",
+    "latitude": 53.2747,
+    "longitude": -6.2253,
+    "source": "https://www.geonames.org/3315278"
+  },
+  {
+    "name": "Tallaght",
+    "latitude": 53.2859,
+    "longitude": -6.37344,
+    "source": "https://www.geonames.org/2961284"
+  },
+  {
+    "name": "Maynooth",
+    "latitude": 53.385,
+    "longitude": -6.59361,
+    "source": "https://www.geonames.org/2962668"
+  },
+  {
+    "name": "Malahide",
+    "latitude": 53.45083,
+    "longitude": -6.15444,
+    "source": "https://www.geonames.org/2962725"
+  },
+  {
+    "name": "Kilkenny",
+    "latitude": 52.65417,
+    "longitude": -7.25222,
+    "source": "https://www.geonames.org/2963398"
+  },
+  {
+    "name": "Drogheda",
+    "latitude": 53.71889,
+    "longitude": -6.34778,
+    "source": "https://www.geonames.org/2964661"
+  },
+  {
+    "name": "Wexford",
+    "latitude": 52.33417,
+    "longitude": -6.4575,
+    "source": "https://www.geonames.org/2960964"
+  },
+  {
+    "name": "Mungret",
+    "latitude": 52.63583,
+    "longitude": -8.69667,
+    "source": "https://www.geonames.org/2962353"
+  },
+  {
+    "name": "Leixlip",
+    "latitude": 53.36583,
+    "longitude": -6.49556,
+    "source": "https://www.geonames.org/2962974"
+  },
+  {
+    "name": "Finglas",
+    "latitude": 53.38917,
+    "longitude": -6.29694,
+    "source": "https://www.geonames.org/2964303"
+  },
+  {
+    "name": "Dundalk",
+    "latitude": 54.0,
+    "longitude": -6.41667,
+    "source": "https://www.geonames.org/2964540"
+  },
+  {
+    "name": "Douglas",
+    "latitude": 51.87444,
+    "longitude": -8.435,
+    "source": "https://www.geonames.org/2964690"
+  },
+  {
+    "name": "Coonagh",
+    "latitude": 52.66306,
+    "longitude": -8.68944,
+    "source": "https://www.geonames.org/2965167"
+  },
+  {
+    "name": "Shannon",
+    "latitude": 52.70389,
+    "longitude": -8.86417,
+    "source": "https://www.geonames.org/3310247"
+  },
+  {
+    "name": "Athlone",
+    "latitude": 53.42278,
+    "longitude": -7.93722,
+    "source": "https://www.geonames.org/3313472"
+  },
+  {
+    "name": "Tralee",
+    "latitude": 52.27042,
+    "longitude": -9.70264,
+    "source": "https://www.geonames.org/2961123"
+  },
+  {
+    "name": "Swords",
+    "latitude": 53.45972,
+    "longitude": -6.21806,
+    "source": "https://www.geonames.org/2961297"
+  },
+  {
+    "name": "Raheen",
+    "latitude": 52.62917,
+    "longitude": -8.66194,
+    "source": "https://www.geonames.org/2961964"
+  },
+  {
+    "name": "Nenagh",
+    "latitude": 52.86284,
+    "longitude": -8.19953,
+    "source": "https://www.geonames.org/2962304"
+  },
+  {
+    "name": "Carlow",
+    "latitude": 52.84083,
+    "longitude": -6.92611,
+    "source": "https://www.geonames.org/2965768"
+  },
+  {
+    "name": "Sligo",
+    "latitude": 54.26969,
+    "longitude": -8.46943,
+    "source": "https://www.geonames.org/2961423"
+  },
+  {
+    "name": "Navan",
+    "latitude": 53.65278,
+    "longitude": -6.68139,
+    "source": "https://www.geonames.org/2962308"
+  },
+  {
+    "name": "Lucan",
+    "latitude": 53.35736,
+    "longitude": -6.44859,
+    "source": "https://www.geonames.org/2962785"
+  },
+  {
+    "name": "Ennis",
+    "latitude": 52.84361,
+    "longitude": -8.98639,
+    "source": "https://www.geonames.org/2964405"
+  },
+  {
+    "name": "Adare",
+    "latitude": 52.56194,
+    "longitude": -8.79556,
+    "source": "https://www.geonames.org/2967076"
+  },
+  {
+    "name": "Naas",
+    "latitude": 53.21583,
+    "longitude": -6.66694,
+    "source": "https://www.geonames.org/2962334"
+  },
+  {
+    "name": "Bray",
+    "latitude": 53.20278,
+    "longitude": -6.09833,
+    "source": "https://www.geonames.org/2966022"
+  },
+  {
+    "name": "Waterford",
+    "latitude": 52.25833,
+    "longitude": -7.11194,
+    "source": "https://www.geonames.org/2960992"
+  },
+  {
+    "name": "Limerick",
+    "latitude": 52.66472,
+    "longitude": -8.62306,
+    "source": "https://www.geonames.org/2962943"
+  },
+  {
+    "name": "Galway",
+    "latitude": 53.27245,
+    "longitude": -9.05095,
+    "source": "https://www.geonames.org/2964180"
+  },
+  {
+    "name": "Dublin",
+    "latitude": 53.33306,
+    "longitude": -6.24889,
+    "source": "https://www.geonames.org/2964574"
+  },
+  {
+    "name": "Cork",
+    "latitude": 51.89797,
+    "longitude": -8.47061,
+    "source": "https://www.geonames.org/2965140"
+  }
+]

@@ -6,11 +6,11 @@
 // This module does that, for the town you live in and everywhere in commuting
 // distance, plus a set of work-from-home searches for the days you cannot travel.
 //
-// Every search here declares its intent, so a result plainly titled "Retail
-// Assistant" is kept on the strength of what was asked for rather than being
-// dropped because the title does not repeat the words "part time".
+// Search intent helps identify relevant categories, but cannot establish hours.
+// Normalisation requires part-time evidence before granting a student category.
 
 import { getJSON, sleep } from './http.js'
+import { LOCAL_SHOPS } from '../local-employers.js'
 
 const ENDPOINT = 'http://public.api.careerjet.net/search'
 const PAGE_SIZE = 99
@@ -76,6 +76,27 @@ const REMOTE_QUERIES = [
   ['data annotation', 'studentsupport'],
 ]
 
+// Brand searches supplement role searches. A returned result still needs its
+// own part-time evidence; the brand/query does not establish working hours.
+export const LOCAL_BRANDS = [
+  'Penneys', 'Primark', 'Dunnes Stores', 'Tesco', 'Lidl', 'Aldi', 'SuperValu',
+  'Centra', 'SPAR', 'Mace', 'Boots', 'H&M', 'NEXT', 'TK Maxx', 'Mango',
+  'River Island', 'Zara', 'Sports Direct', 'JD Sports', 'Skechers', 'JYSK',
+  'The Range', 'B&Q', 'Woodies', 'Dealz', 'Mr Price', 'Smyths Toys', 'Eason',
+  'Brown Thomas', 'Kurt Geiger', 'Rituals', 'Pandora', 'McDonalds', 'Supermacs',
+  'KFC', 'Subway', 'Costa Coffee', 'Starbucks', 'Insomnia', 'Applegreen',
+  'Circle K', 'Sodexo', 'Aramark', 'Limerick Strand Hotel', 'Castletroy Park Hotel',
+]
+
+export function localSearches({ cities, includeRemote, remoteLocation, brands = LOCAL_BRANDS, brandCities = ['Limerick'], shops = [], shopLocation = 'Limerick' }) {
+  return [
+    ...cities.flatMap((city) => CITY_QUERIES.map(([q, intent]) => ({ q, intent, location: city, remote: false }))),
+    ...brandCities.flatMap((city) => brands.map((brand) => ({ q: `${brand} part time`, intent: 'studentgeneral', location: city, remote: false }))),
+    ...shops.map((shop) => ({ q: `${shop} part time`, intent: 'studentgeneral', location: shopLocation, remote: false })),
+    ...(includeRemote ? REMOTE_QUERIES.map(([q, intent]) => ({ q, intent, location: remoteLocation, remote: true })) : []),
+  ]
+}
+
 export const DEFAULT_LOCAL_SEARCH = {
   enabled: true,
   country: 'ie',
@@ -84,7 +105,12 @@ export const DEFAULT_LOCAL_SEARCH = {
   cities: [
     'Limerick', 'Castletroy', 'Raheen', 'Annacotty', 'Newcastle West',
     'Shannon', 'Ennis', 'Nenagh', 'Adare',
+    'Dooradoyle', 'Caherdavin', 'Corbally', 'Mungret', 'Ballysimon',
   ],
+  brands: LOCAL_BRANDS,
+  shops: LOCAL_SHOPS,
+  shopLocation: 'Limerick',
+  brandCities: ['Limerick', 'Shannon', 'Ennis', 'Nenagh'],
   // Work-from-home searches are run once against the country, not per city.
   remoteLocation: 'Ireland',
   maxPages: 4,
@@ -103,14 +129,15 @@ export async function fetchLocal({
   delayMs = 120,
   affid,
   onProgress,
+  brands = DEFAULT_LOCAL_SEARCH.brands,
+  brandCities = DEFAULT_LOCAL_SEARCH.brandCities,
+  shops = DEFAULT_LOCAL_SEARCH.shops,
+  shopLocation = DEFAULT_LOCAL_SEARCH.shopLocation,
 } = {}) {
   const out = []
   const errors = []
 
-  const searches = [
-    ...cities.flatMap((city) => CITY_QUERIES.map(([q, intent]) => ({ q, intent, location: city, remote: false }))),
-    ...(includeRemote ? REMOTE_QUERIES.map(([q, intent]) => ({ q, intent, location: remoteLocation, remote: true })) : []),
-  ]
+  const searches = localSearches({ cities, includeRemote, remoteLocation, brands, brandCities, shops, shopLocation })
 
   let cursor = 0
   let done = 0

@@ -136,7 +136,7 @@ export const PROFILES = [
     group: 'student',
     name: 'Retail and shop work',
     queries: ['part time retail assistant', 'part time sales assistant', 'part time shop assistant', 'part time store assistant'],
-    titleTerms: ['retail assistant', 'sales assistant', 'shop assistant', 'store assistant', 'checkout operator', 'deli assistant', 'store team member'],
+    titleTerms: ['retail assistant', 'sales assistant', 'shop assistant', 'store assistant', 'checkout operator', 'deli assistant', 'store team member', 'team member', 'sales advisor', 'sales adviser', 'sales associate', 'retail associate', 'beauty advisor', 'sales consultant', 'stockroom assistant', 'retail stylist', 'store colleague', 'sports advisor', 'shop floor assistant', 'pharmacy counter assistant', 'optical assistant'],
     partTimeOnly: true,
   },
   {
@@ -144,7 +144,7 @@ export const PROFILES = [
     group: 'student',
     name: 'Hospitality and food service',
     queries: ['part time barista', 'part time waiter', 'part time kitchen porter', 'part time catering assistant', 'part time hotel receptionist'],
-    titleTerms: ['barista', 'waiter', 'waitress', 'server', 'kitchen porter', 'catering assistant', 'food and beverage assistant', 'hotel receptionist', 'front of house', 'concierge', 'crew member'],
+    titleTerms: ['barista', 'waiter', 'waitress', 'server', 'kitchen porter', 'catering assistant', 'food and beverage assistant', 'hotel receptionist', 'front of house', 'concierge', 'crew member', 'night porter', 'bar staff', 'waiting staff', 'cafe assistant', 'cafe associate', 'food beverage assistant', 'room attendant', 'baker', 'bakery assistant', 'restaurant staff'],
     partTimeOnly: true,
   },
   {
@@ -184,14 +184,14 @@ const COMPILED = PROFILES.map((p) => ({
 
 // Scores a listing against every profile. Title hits are worth far more than
 // description hits, which is what separates a real match from a board's loose guess.
-export function classify(title, description) {
+export function classify(title, description, employmentType = detectEmploymentType(title, description)) {
   const t = String(title || '')
   const d = String(description || '')
   const matched = []
   let best = 0
 
   for (const p of COMPILED) {
-    if (p.partTimeOnly && detectEmploymentType(t, d) !== 'part_time') continue
+    if (p.partTimeOnly && employmentType !== 'part_time') continue
     let score = 0
     for (const re of p.terms) {
       if (re.test(t)) score += 10

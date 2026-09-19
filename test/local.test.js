@@ -10,7 +10,7 @@ test('the local search is pointed at Limerick and its commuter towns', () => {
   }
 })
 
-test('search intent rescues a student job whose title never says part time', () => {
+test('search intent alone cannot establish part-time hours', () => {
   const raw = {
     url: 'https://example.test/1',
     source: 'local',
@@ -18,14 +18,11 @@ test('search intent rescues a student job whose title never says part time', () 
     description: 'Join our Limerick store team',
     locationRaw: 'Limerick',
   }
-  // Without intent the partTimeOnly guard drops it, which is what kept the
-  // Limerick part-time list nearly empty.
   assert.equal(buildJob(raw, 'now').score, 0)
 
   const kept = buildJob({ ...raw, intentProfiles: ['studentretail'] }, 'now')
-  assert.ok(kept.score > 0)
-  assert.ok(kept.groups.includes('student'))
-  assert.ok(kept.profiles.includes('studentretail'))
+  assert.equal(kept.employmentType, 'unspecified')
+  assert.ok(!kept.groups.includes('student'))
 })
 
 test('intent never invents a profile that does not exist', () => {
@@ -48,13 +45,23 @@ test('search intent does not vouch for a career role that happens to match', () 
   }
 })
 
-test('intent still rescues the genuinely casual titles', () => {
+test('intent keeps relevant titles when part-time hours are evidenced', () => {
   for (const title of ['Retail Assistant', 'Kitchen Porter', 'Cleaner', 'Barista',
     'Sales Associate', 'Security Officer', 'Customer Service Advisor', 'Warehouse Operative']) {
     const j = buildJob({
-      url: 'https://example.test/y', source: 'local', title,
+      url: 'https://example.test/y', source: 'local', title, description: 'Part-time position, 16 hours per week',
       locationRaw: 'Limerick', intentProfiles: ['studentgeneral'],
     }, 'now')
     assert.ok(j.groups.includes('student'), `${title} should be student work`)
   }
+})
+
+test('brand coverage searches employers in configured towns without asserting employment type', async () => {
+  const { localSearches, LOCAL_BRANDS } = await import('../src/sources/local.js')
+  for (const brand of ['Penneys', 'Dunnes Stores', 'Tesco', 'Boots', 'NEXT', 'McDonalds', 'Supermacs']) assert.ok(LOCAL_BRANDS.includes(brand))
+  const searches = localSearches({cities: [], includeRemote: false, brands: ['Tesco', 'NEXT'], brandCities: ['Limerick', 'Shannon']})
+  assert.equal(searches.length, 4)
+  assert.ok(searches.some(s => s.q === 'NEXT part time' && s.location === 'Limerick'))
+  assert.ok(searches.every(s => s.employmentType === undefined))
+  assert.deepEqual(localSearches({cities: [], includeRemote: false, brands: []}), [])
 })

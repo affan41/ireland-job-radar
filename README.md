@@ -62,10 +62,14 @@ over aggregator redirects, and the card shows when another source also carries i
 | --- | --- | --- |
 | Careerjet | No | The bulk of it, run separately against the Irish, Cypriot and Maltese indexes. Aggregates IrishJobs, Jobs.ie, the recruitment agencies and most employer sites |
 | Local searches | No | Careerjet again, but asked town by town rather than country-wide, for Limerick and everywhere within a commute, plus a set of work-from-home searches. A national sweep sorted by date never reaches more than a handful of Limerick listings; asking for Limerick directly returns several hundred |
+| Local employer sites | No | Current adverts linked from The Old Quarter Group careers page, covering the townhouse, pub, Fordes Courtyard and The Top House |
+| JobAlert.ie | No | The paginated Limerick part-time search, with open/expired status and actual employment types checked |
+| Primark, Lidl, McDonald's, Supermac's and Boots | No | Official public vacancy feeds and full adverts, with contract types, hours and available workplace coordinates |
+| Tesco Ireland | No | Official Irish store adverts, with contract hours read from each live vacancy page and expired adverts excluded |
 | ACCA Careers | No | Finance and accountancy vacancies from ACCA's official careers board, searched directly for Ireland |
 | JobsIreland | No | Independent vacancies from the Irish government's Department of Social Protection service, including its complete current part-time search |
 | Major employer career sites | No | Ireland vacancies read directly from Apple, Amazon, Microsoft, KPMG, Deloitte, PwC and EY, with official application links rather than aggregator redirects |
-| Employer boards | No | Greenhouse, Ashby, Workable, Lever and SmartRecruiters boards, straight from companies including Stripe, Intercom, OpenAI, H&M, JYSK, Version 1 and MUFG. Roles here often never reach the aggregators |
+| Employer boards | No | Greenhouse, Ashby, Workable, Lever and SmartRecruiters boards, straight from companies including Stripe, Intercom, OpenAI, H&M, JYSK, Kurt Geiger, Frasers Group / Sports Direct, Rituals, SPAR, MACE, Londis, EUROSPAR, Version 1 and MUFG. Roles here often never reach the aggregators |
 | Remote boards | No | Remotive, Himalayas, Jobicy, Arbeitnow, filtered hard to listings that actually accept someone in Ireland |
 | Adzuna Ireland | Yes, free | Extra coverage plus structured salary figures |
 
@@ -115,19 +119,15 @@ at the University of Limerick, which means two things at once:
 - Anything **remote**, wherever the employer sits, since a job with no address is a
   job you can do from a room in Limerick.
 
-What survives the filter, in order:
+The advert must indicate part-time work, through its title, description, stated
+weekly hours or a source employment-type field. Search keywords, a student category,
+evening/weekend shifts, and temporary or seasonal contracts do not establish
+part-time hours. Listings with unknown hours are excluded from this tab.
 
-1. Explicit full-time and contract roles are dropped, because a Stamp 2 student
-   permission does not allow them.
-2. What is left has to look like student work: the advert says part-time or
-   seasonal, or the role falls in the **Student part-time jobs** category. Without
-   this second step "not full-time" quietly admits every senior role, because most
-   adverts never state their hours at all.
-3. Career titles are dropped as well, so a Head of Fund Accounting that happens to
-   mention part-time hours in its benefits does not appear. The exception is an
-   advert that states plainly that the role is part-time: that is believed over any
-   reading of the title, so a part-time retail consultant, or a part-time accounts
-   role, still shows.
+Explicit full-time titles, full-time source fields and weekly hours of 30 or more
+are excluded. Mixed full-time/part-time descriptions are excluded unless the title
+specifically identifies a part-time vacancy. Part-time jobs can still require more
+than 20 hours per week, so check the actual schedule before applying.
 
 The bar under the tab carries the hours you are allowed: 20 a week during term and
 40 a week in the holiday periods on Stamp 2. That is a reminder, not legal advice.
@@ -137,13 +137,37 @@ Two things make this tab find work the rest of the radar missed:
 
 - **Town-level searching.** The national sweep is sorted by date and runs out of
   pages long before a city the size of Limerick gets a fair showing.
-- **Search intent.** A job titled plainly "Retail Assistant" used to be discarded,
-  because the student categories only accepted a listing whose title actually said
-  "part time". When the collector has gone and asked Careerjet for part-time retail
-  work in Limerick, the question is its own evidence, so the result is kept.
+- **Search intent.** Local searches help find relevant roles, but cannot establish
+  part-time hours. Results must also carry part-time evidence in the advert or
+  source employment-type field.
 
 To point this at somewhere else, edit `localSearch.cities` in `config.json` and
 change `regionKeys` in `src/views.js`.
+
+## Local brands and employer coverage
+
+The local collector runs targeted part-time searches for 45 brand names, including
+Penneys/Primark, Dunnes Stores, Tesco, Lidl, Aldi, Boots, NEXT, H&M, TK Maxx,
+Sports Direct, JD Sports, Brown Thomas, McDonald's, Supermac's, Costa, Starbucks,
+Applegreen, Circle K and local hotels. Brand searches run separately for Limerick,
+Shannon, Ennis and Nenagh. Role searches also cover Dooradoyle, Caherdavin, Corbally, Mungret and Ballysimon.
+A further 190 named shops, hospitality and campus employers are searched in Limerick,
+based on the Crescent, Castletroy, Parkway and Arthurs Quay directories plus broader
+local employer targets. This brings the default plan to 235 names and 900 searches.
+The directory inventory and its sources are in `src/local-employers.js`.
+These are search targets, not a claim that every brand has a suitable vacancy.
+
+Direct feeds supplement the aggregator: Tesco Ireland, NEXT's own recruitment
+system, Kurt Geiger, Frasers Group / Sports Direct and Rituals, alongside the
+existing H&M and JYSK boards. NEXT's weekly shift notation (for example `5.50hrs p/w`)
+and Workable's employment-type fields are used to identify part-time hours.
+
+Customise `localSearch.brands` and `localSearch.brandCities` in `config.json`.
+Set `brands` to `[]` to turn off brand searches. `localSearch.shops` and
+`localSearch.shopLocation` control the extra local employer targets. `localSites.enabled`
+and `jobAlert.enabled` control the new direct-site and independent-board collectors. `tesco.enabled` and
+`tesco.maxPages` control the official Tesco collector. The same strict part-time
+rules apply to all new sources; unknown hours never qualify through a search term.
 
 ## Filters
 
@@ -254,3 +278,34 @@ Restart and refresh.
   an alert on publicjobs.ie directly.
 - Careerjet's own keyword matching is loose, which is what the match strength filter
   is there to clean up.
+
+### Distance from Troy Village and nearby towns
+
+Each job card shows an approximate straight-line distance from Troy Village,
+Castletroy (52.66382, -8.57677), with a link to check the actual route. An
+advertised workplace pin is used when available. Otherwise a known town or
+shopping-centre reference point is used and labelled as an area estimate.
+County-only, ambiguous and unsupported locations show "Distance unavailable";
+remote work shows "No regular commute stated". No journey time is inferred.
+The estimate and its basis are included in CSV exports.
+
+The Limerick part-time view now has an optional nearby-towns checkbox, enabled
+initially, for Shannon and Ennis in Clare and Nenagh in Tipperary. It does not
+include all jobs in those counties. The selection is saved locally; date,
+employment-type and all other filters continue to apply. The API equivalent is
+`view=limerick-pt&nearby=1`.
+
+Reference place coordinates are stored in `src/places.json`, so browsing does
+not send location requests to an external geocoder. Town points are a small
+extract from [GeoNames Ireland](https://download.geonames.org/export/dump/IE.zip),
+retrieved 19 September 2026, under [CC BY 4.0](https://www.geonames.org/about.html).
+The Troy origin is [OpenStreetMap way 375923751](https://www.openstreetmap.org/way/375923751)
+([ODbL attribution](https://www.openstreetmap.org/copyright)); the two shopping-centre
+points come from McDonald's public restaurant vacancy map pins. Place points
+are approximate and can be revised independently of job history.
+
+`retailEmployers.enabled` and `retailEmployers.providers` control the new direct
+collectors. Public search configuration is read from the employer pages; no
+personal login credentials are required. Dunnes has a human-verification step
+and Aldi restricts automated access, so both remain covered by the existing
+brand searches rather than an unreliable direct collector.

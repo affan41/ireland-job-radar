@@ -34,3 +34,16 @@ test('prefers the specific full-time hours in a title over mixed boilerplate', (
   assert.equal(detectEmploymentType(title, body), 'full_time')
   assert.ok(!classify(title, body).groups.includes('student'))
 })
+
+test('brand job titles qualify when their advertised hours are part-time', () => {
+  for (const title of ['Team Member', 'Sales Advisor', 'Retail Associate', 'Beauty Advisor', 'Sales Consultant']) {
+    assert.ok(classify(title, 'Part-time, 16 hours per week').groups.includes('student'))
+    assert.ok(!classify(title, 'Full-time, 39 hours per week').groups.includes('student'))
+  }
+})
+
+test('part-time education and optional discussion do not establish part-time employment', () => {
+  assert.equal(detectEmploymentType('QC Laboratory Technician', 'Support for part-time training relevant to the position.'), 'unspecified')
+  assert.equal(detectEmploymentType('Christmas Customer Assistant', 'We are open to discussing part-time and job share options.'), 'unspecified')
+  assert.equal(detectEmploymentType('Part-time Customer Assistant', 'Support for part-time study.'), 'part_time')
+})

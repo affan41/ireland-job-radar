@@ -3,6 +3,7 @@ const $ = (sel) => document.querySelector(sel)
 const state = {
   country: 'ie',
   view: '',
+  includeNearby: true,
   sponsorship: new Set(),
   regions: new Set(),
   groups: new Set(),
@@ -37,6 +38,7 @@ function loadState() {
     for (const k of ['sponsorship', 'regions', 'groups', 'modes', 'types', 'sources']) if (Array.isArray(raw[k])) state[k] = new Set(raw[k])
     for (const k of ['q', 'days', 'minScore', 'salaryMin', 'sort', 'country', 'view']) if (raw[k] != null) state[k] = raw[k]
     if (typeof raw.savedOnly === 'boolean') state.savedOnly = raw.savedOnly
+    if (typeof raw.includeNearby === 'boolean') state.includeNearby = raw.includeNearby
     // Existing users had a narrower seven-day default. Widen it once without
     // disturbing their chosen regions, categories or shortlist preference.
     if ((raw._version || 1) < FILTER_VERSION && raw.days === '7') state.days = '14'
@@ -49,6 +51,7 @@ function params(extra = {}) {
   // country switch rather than sitting alongside it.
   if (state.view) p.set('view', state.view)
   else if (state.country) p.set('countries', state.country)
+  if (state.includeNearby) p.set('nearby', '1')
   if (state.sponsorship.size) p.set('sponsorship', [...state.sponsorship].join(','))
   if (state.regions.size) p.set('regions', [...state.regions].join(','))
   if (state.groups.size) p.set('groups', [...state.groups].join(','))
@@ -166,6 +169,8 @@ const SPONSOR_LABELS = {
   unlikely: 'No sponsorship',
 }
 const SOURCE_LABELS = {
+  jobalert: 'JobAlert.ie',
+  local: 'Local and brand searches',
   careerjet: 'Careerjet / aggregated boards',
   acca: 'ACCA Careers',
   jobsireland: 'JobsIreland (government)',
@@ -242,6 +247,7 @@ function renderPermitNote() {
 }
 
 function renderFilters() {
+  $('#nearbyOptions').hidden = state.view !== 'limerick-pt'
   renderCountries()
   renderPermitNote()
   renderRegions()
@@ -312,7 +318,15 @@ function jobCard(j) {
 
   const el = document.createElement('article')
   el.className = `job${j.is_saved ? ' is-saved' : ''}`
+  const distance = j.distance || { label: 'Distance unavailable', detail: 'A specific workplace location is needed', kind: 'unknown' }
   el.innerHTML = `
+    <div class="job-distance ${esc(distance.kind)}" title="${esc(distance.detail)}">
+      <span class="distance-value">${esc(distance.label)}</span>
+      <span>${distance.kind === 'remote' ? 'No regular commute stated' : 'from Troy Village'}</span>
+      <span class="distance-basis">${distance.kind === 'area' ? `${esc(distance.place)} area estimate` : distance.kind === 'workplace' ? 'Straight-line estimate' : distance.kind === 'unknown' ? 'Location needs checking' : ''}</span>
+      ${distance.routeUrl ? `<a href="${esc(distance.routeUrl)}" target="_blank" rel="noopener noreferrer">Check route</a>` : ''}
+    </div>
+    <div class="job-content">
     <div class="job-top">
       <a class="job-title" href="${esc(j.url)}" target="_blank" rel="noopener noreferrer">${esc(j.title)}</a>
       <div class="job-actions">
@@ -334,7 +348,7 @@ function jobCard(j) {
       <span>${esc(j.location_raw || '')}</span>
       ${posted ? `<span class="sep">·</span><span>${timeAgo(posted)}</span>` : ''}
       <span class="sep">·</span><span>${esc(sourceText)}</span>
-    </div>`
+    </div></div>`
 
   el.querySelector('.save').addEventListener('click', async (e) => {
     const on = !j.is_saved
@@ -500,6 +514,7 @@ function bind() {
   }
 
   $('#savedOnly').addEventListener('change', (e) => { state.savedOnly = e.target.checked; state.page = 0; refreshAll() })
+  $('#includeNearby').addEventListener('change', (e) => { state.includeNearby = e.target.checked; state.regions.clear(); state.page = 0; refreshAll() })
 
   for (const btn of document.querySelectorAll('[data-clear]')) {
     btn.addEventListener('click', () => { state[btn.dataset.clear].clear(); state.page = 0; refreshAll() })
@@ -509,6 +524,7 @@ function bind() {
     state.regions.clear(); state.groups.clear(); state.modes.clear(); state.types.clear()
     state.sources.clear(); state.sponsorship.clear()
     state.q = ''; state.days = '14'; state.minScore = '10'; state.salaryMin = '0'; state.savedOnly = false; state.page = 0
+    state.includeNearby = true
     syncControls()
     refreshAll()
   })
@@ -529,6 +545,7 @@ function syncControls() {
   $('#salaryMin').value = state.salaryMin
   $('#sort').value = state.sort
   $('#savedOnly').checked = state.savedOnly
+  $('#includeNearby').checked = state.includeNearby
 }
 
 loadState()

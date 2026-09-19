@@ -8,6 +8,7 @@
 // today simply returns nothing rather than breaking the run.
 
 export const MNC_EMPLOYERS = [
+  { platform: 'oracle', name: 'NEXT', host: 'ekeq.fa.em2.oraclecloud.com', site: 'CX_3001', maxPages: 10 },
   // --- Consulting and professional services ---
   { platform: 'workday', name: 'Accenture', host: 'accenture.wd103.myworkdayjobs.com', site: 'AccentureCareers' },
 

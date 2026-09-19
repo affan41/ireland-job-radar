@@ -1,22 +1,18 @@
 {
   "_comment": "Copy this to config.json and edit. Everything here is optional; the radar works with no config at all.",
-
   "port": 8099,
   "refreshMinutes": 45,
   "pruneAfterDays": 30,
-
   "careerjet": {
     "enabled": true,
     "maxPages": 3,
     "affid": null
   },
-
   "accaCareers": {
     "_comment": "Official ACCA Careers RSS search for Ireland. No key required.",
     "enabled": true,
     "maxPages": 25
   },
-
   "adzuna": {
     "_comment": "Free keys from https://developer.adzuna.com. Adds salary data and wider coverage.",
     "enabled": true,
@@ -24,7 +20,6 @@
     "appKey": null,
     "maxPages": 2
   },
-
   "jobsIreland": {
     "_comment": "Official Department of Social Protection vacancies. No key required.",
     "enabled": true,
@@ -32,7 +27,6 @@
     "latestPages": 4,
     "partTimeLimit": 250
   },
-
   "officialEmployers": {
     "_comment": "Official Ireland careers feeds for Apple, Amazon, Microsoft, KPMG, Deloitte, PwC and EY. No key required.",
     "enabled": true,
@@ -50,25 +44,72 @@
     "deloitteMaxPages": 10,
     "eyMaxPages": 10
   },
-
   "localSearch": {
-    "_comment": "Town-by-town searching for where you actually live, plus work-from-home searches. Change cities if you move; also update regionKeys in src/views.js.",
+    "_comment": "Town-by-town searching for where you actually live, plus work-from-home searches. Change cities if you move; also update regionKeys in src/views.js. Searches 45 brands by default; set brands to an array to customise or [] to disable brand searches. Also searches 190 local shops, hospitality and campus employer names by default; set shops to an array to customise or [] to disable these.",
     "enabled": true,
-    "cities": ["Limerick", "Castletroy", "Raheen", "Annacotty", "Newcastle West", "Shannon", "Ennis", "Nenagh", "Adare"],
-    "maxPages": 4
+    "cities": [
+      "Limerick",
+      "Castletroy",
+      "Raheen",
+      "Annacotty",
+      "Newcastle West",
+      "Shannon",
+      "Ennis",
+      "Nenagh",
+      "Adare",
+      "Dooradoyle",
+      "Caherdavin",
+      "Corbally",
+      "Mungret",
+      "Ballysimon"
+    ],
+    "maxPages": 4,
+    "brandCities": [
+      "Limerick",
+      "Shannon",
+      "Ennis",
+      "Nenagh"
+    ],
+    "shopLocation": "Limerick"
   },
-
   "employers": {
     "_comment": "Public careers boards. Add any company here to follow it directly.",
     "enabled": true,
     "companies": [
-      { "provider": "greenhouse", "slug": "stripe", "name": "Stripe" },
-      { "provider": "greenhouse", "slug": "intercom", "name": "Intercom" },
-      { "provider": "ashby", "slug": "openai", "name": "OpenAI" }
+      {
+        "provider": "greenhouse",
+        "slug": "stripe",
+        "name": "Stripe"
+      },
+      {
+        "provider": "greenhouse",
+        "slug": "intercom",
+        "name": "Intercom"
+      },
+      {
+        "provider": "ashby",
+        "slug": "openai",
+        "name": "OpenAI"
+      }
     ]
   },
-
   "remoteBoards": {
     "enabled": true
+  },
+  "tesco": {
+    "enabled": true,
+    "maxPages": 20
+  },
+  "localSites": {
+    "enabled": true
+  },
+  "jobAlert": {
+    "enabled": true,
+    "maxPages": 15
+  },
+  "retailEmployers": {
+    "_comment": "Direct public vacancies and full descriptions. Dunnes and Aldi remain covered through general searches because their direct sites restrict automated access.",
+    "enabled": true,
+    "providers": ["primark", "lidl", "mcdonalds", "supermacs", "boots"]
   }
 }

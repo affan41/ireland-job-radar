@@ -125,6 +125,7 @@ export function buildJob(raw, seenAt) {
 
   const company = clean(raw.company, 120) || null
   const description = clean(raw.description, 900)
+  const employmentType = detectEmploymentType(title, clean(raw.description, Infinity), raw.employmentType)
   const locationRaw = clean(raw.locationRaw, 140)
 
   let region = resolveRegion(locationRaw, raw.regionHint)
@@ -132,13 +133,12 @@ export function buildJob(raw, seenAt) {
   // gazetteer has never heard of, so keep the listing rather than losing it.
   if (region.regionKey === 'unknown' && raw.country) region = countryFallback(raw.country)
 
-  let { profiles, groups, score } = classify(title, description)
+  let { profiles, groups, score } = classify(title, description, employmentType)
 
-  // Some searches are their own evidence. When the collector asked Careerjet for
-  // part-time retail work in Limerick, a result titled plainly "Retail Assistant"
-  // is exactly what was wanted, even though the title never says "part time" and
-  // the partTimeOnly guard would otherwise throw it away.
-  const intent = (raw.intentProfiles || []).filter((id) => PROFILE_BY_ID[id])
+  // Search terms establish relevance, never working hours. Student profiles
+  // still require part-time evidence from the advert or the source's type field.
+  const intent = (raw.intentProfiles || []).filter((id) => PROFILE_BY_ID[id]
+    && (!PROFILE_BY_ID[id].partTimeOnly || employmentType === 'part_time'))
   // The search intent is blunt: a Careerjet search for "part time" in Limerick
   // returns senior roles too. Do not let it vouch for a job that reads as a career
   // position, or the student categories fill up with pharmacists and planners.
@@ -156,6 +156,8 @@ export function buildJob(raw, seenAt) {
     title,
     company,
     locationRaw,
+    latitude: typeof raw.latitude === 'number' && Number.isFinite(raw.latitude) && Math.abs(raw.latitude) <= 90 ? raw.latitude : null,
+    longitude: typeof raw.longitude === 'number' && Number.isFinite(raw.longitude) && Math.abs(raw.longitude) <= 180 ? raw.longitude : null,
     ...region,
     country,
     sponsorship: sponsorship.level,
@@ -167,7 +169,7 @@ export function buildJob(raw, seenAt) {
     ...salary,
     postedAt: toDateISO(raw.postedAt),
     workMode: raw.workMode || detectWorkMode(title, description, locationRaw),
-    employmentType: raw.employmentType || detectEmploymentType(title, description),
+    employmentType,
     // Whether the title reads as a career position rather than casual work.
     careerRole: SENIOR_TITLE.test(title) ? 1 : 0,
     profiles,

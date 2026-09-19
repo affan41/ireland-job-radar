@@ -12,22 +12,20 @@ export const VIEWS = [
     includeRemote: true,
     // A student visa rules out a full-time contract, so those are left out.
     excludeEmploymentTypes: ['full_time', 'contract'],
-    // Excluding full-time is not enough on its own: most adverts never state their
-    // hours at all, so "not full-time" quietly lets every senior role through. A
-    // listing also has to say part-time or seasonal, or be one of the kinds of work
-    // students actually do.
+    // Unknown hours, temporary work and a student category are not evidence of
+    // part-time hours. Require the classified employment type itself.
     requireAny: {
-      employmentTypes: ['part_time', 'temporary'],
-      groups: ['student'],
+      employmentTypes: ['part_time'],
     },
     // A "Head of EMEA Fund Accounting" whose advert merely mentions part-time hours
     // somewhere is still a career post. But when an advert states plainly that the
     // role is part-time, believe it over any reading of the job title: a part-time
     // retail consultant, or a part-time accounts role, is exactly the point.
     excludeCareerRoles: true,
-    note: 'Limerick and commutable towns, plus work-from-home roles. '
+    note: 'Limerick, plus work-from-home roles. Use the nearby-towns option to include Shannon, Ennis and Nenagh. '
       + 'On a Stamp 2 student permission you may work 20 hours a week during term and '
-      + '40 hours a week in the holiday periods. Full-time contracts are filtered out. '
+      + '40 hours a week in the holiday periods. Only adverts indicating part-time work are shown; '
+      + 'temporary jobs and jobs with unknown hours are excluded. Part-time hours can still exceed 20 a week. '
       + 'Check the current conditions on your own permission before you apply.',
     noteLink: {
       href: 'https://www.irishimmigration.ie/coming-to-study-in-ireland/what-are-my-options-for-studying-in-ireland/',
@@ -40,7 +38,7 @@ export const VIEW_BY_KEY = Object.fromEntries(VIEWS.map((v) => [v.key, v]))
 
 // Turns a view into a WHERE fragment. Kept here rather than in db.js so that
 // adding a view is a single edit in a single file.
-export function viewClause(key) {
+export function viewClause(key, { includeNearby = false } = {}) {
   const v = VIEW_BY_KEY[key]
   if (!v) return null
 
@@ -53,6 +51,13 @@ export function viewClause(key) {
     params.push(...v.regionKeys)
   }
   if (v.includeRemote) location.push(`(j.work_mode = 'remote' OR j.region_key = 'remote')`)
+  if (key === 'limerick-pt' && includeNearby) {
+    // Match whole place names within the correct county, not all of Clare or
+    // Tipperary (and never Carrick-on-Shannon or Enniscorthy).
+    const words = `(' ' || lower(replace(replace(replace(j.location_raw, ',', ' '), '-', ' '), '/', ' ')) || ' ')`
+    location.push(`(j.region_key = 'clare' AND (${words} LIKE '% shannon %' OR ${words} LIKE '% ennis %'))`)
+    location.push(`(j.region_key = 'tipperary' AND ${words} LIKE '% nenagh %')`)
+  }
   if (location.length) where.push(`(${location.join(' OR ')})`)
 
   if (v.excludeEmploymentTypes?.length) {

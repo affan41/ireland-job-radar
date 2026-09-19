@@ -34,6 +34,7 @@ function filtersFrom(url) {
   const view = VIEW_BY_KEY[p.get('view')] ? p.get('view') : ''
   return {
     view,
+    includeNearby: p.get('nearby') === '1',
     // A view sets its own geography, including remote work that belongs to no
     // country, so the country switch is left out while one is active.
     countries: view ? [] : list(p.get('countries')),
@@ -96,12 +97,12 @@ const server = createServer(async (req, res) => {
     if (path === '/api/export.csv') {
       const { rows } = queryJobs({ ...filtersFrom(url), limit: 300 })
       const head = ['Title', 'Company', 'Location', 'Country', 'Region', 'Work mode', 'Job type',
-        'Sponsorship signal', 'Why', 'Salary', 'Posted', 'Source', 'Link']
+        'Sponsorship signal', 'Why', 'Salary', 'Posted', 'Source', 'Link', 'Distance from Troy Village', 'Distance basis']
       const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`
       const csv = [head.join(','), ...rows.map((r) => [
         r.title, r.company, r.location_raw, r.country, r.county_name, r.work_mode, r.employment_type,
         r.sponsorship, r.sponsorship_reasons,
-        r.salary_text, (r.posted_at || r.first_seen || '').slice(0, 10), r.available_sources || r.source, r.url,
+        r.salary_text, (r.posted_at || r.first_seen || '').slice(0, 10), r.available_sources || r.source, r.url, r.distance.label, r.distance.detail,
       ].map(esc).join(','))].join('\n')
       res.writeHead(200, {
         'Content-Type': 'text/csv; charset=utf-8',

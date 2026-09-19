@@ -39,6 +39,10 @@ const defaults = {
   // City-level searching for wherever you are actually living, plus the
   // work-from-home searches that go with it.
   localSearch: { ...DEFAULT_LOCAL_SEARCH },
+  tesco: { enabled: true, maxPages: 20 },
+  localSites: { enabled: true },
+  jobAlert: { enabled: true, maxPages: 15 },
+  retailEmployers: { enabled: true, providers: ['primark', 'lidl', 'mcdonalds', 'supermacs', 'boots'] },
   employers: { enabled: true, companies: DEFAULT_COMPANIES },
   mncEmployers: { enabled: true, companies: MNC_EMPLOYERS },
   remoteBoards: { enabled: true },
