@@ -10,6 +10,7 @@ import { isIrishLocation } from '../regions.js'
 import { fetchRecruitee } from './recruitee.js'
 
 export const DEFAULT_COMPANIES = [
+  { provider: 'recruitee', slug: 'distilled', name: 'Distilled / Daft / DoneDeal / Adverts' },
   { provider: 'recruitee', slug: 'sparcareers', name: 'SPAR' },
   { provider: 'recruitee', slug: 'macecareers', name: 'MACE' },
   { provider: 'recruitee', slug: 'londiscareers', name: 'Londis' },

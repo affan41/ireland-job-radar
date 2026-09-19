@@ -8,11 +8,15 @@ export function mapRecruiteeJob(job, {name, slug}, now = Date.now()) {
   const origin = `https://${slug}.recruitee.com`
   const url = new URL(job.careers_url || `/o/${encodeURIComponent(job.slug)}`, origin)
   if (url.origin !== origin) return null
+  const locations = (job.locations || []).map(l => [l.city, l.country].filter(Boolean).join(', ')).filter(Boolean)
   return {
     title: job.title, company: job.company_name || name,
-    locationRaw: job.location || [job.city, job.country].filter(Boolean).join(', '),
+    locationRaw: (job.remote || job.hybrid)
+      ? locations.join(' / ') || [job.location || job.city, job.country].filter(Boolean).join(', ')
+      : job.location || [job.city, job.country].filter(Boolean).join(', '),
     url: url.href, country: 'ie', source: 'employer', sourceDetail: `${name} Careers`,
-    description: [job.description, job.requirements].filter(Boolean).join(' '),
+    description: [job.description, job.requirements, ...(job.open_questions || []).map(q => q.body)].filter(Boolean).join(' '),
+    workMode: job.hybrid ? 'hybrid' : job.remote ? 'remote' : undefined,
     postedAt: job.published_at,
     // The API's default min/max range (often 4-40) is not a promised schedule.
     employmentType: type.includes('fulltime') ? 'full_time' : type.includes('parttime') ? 'part_time' : undefined,

@@ -152,7 +152,7 @@ export const PROFILES = [
     group: 'student',
     name: 'Customer service, admin and tutoring',
     queries: ['part time customer service', 'part time receptionist', 'part time admin assistant', 'part time tutor'],
-    titleTerms: ['customer service advisor', 'customer service assistant', 'customer assistant', 'call centre agent', 'receptionist', 'admin assistant', 'administrative assistant', 'library assistant', 'tutor'],
+    titleTerms: ['customer service advisor', 'customer service assistant', 'customer assistant', 'call centre agent', 'receptionist', 'admin assistant', 'administrative assistant', 'library assistant', 'tutor', 'customer support', 'customer service', 'virtual assistant', 'data entry', 'chat support', 'email support', 'moderator', 'transcriber', 'transcription', 'research assistant', 'appointment setter', 'social media assistant'],
     partTimeOnly: true,
   },
   {

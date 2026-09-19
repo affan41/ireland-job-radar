@@ -84,6 +84,7 @@ db.exec(`
 // Existing databases pre-date some fields. Keep upgrades automatic so a user can
 // pull a newer version and start it without rebuilding or losing shortlists.
 const jobColumns = new Set(db.prepare('PRAGMA table_info(jobs)').all().map((c) => c.name))
+if (!jobColumns.has('remote_student_note')) db.exec('ALTER TABLE jobs ADD COLUMN remote_student_note TEXT')
 for (const column of ['latitude', 'longitude']) {
   if (!jobColumns.has(column)) db.exec(`ALTER TABLE jobs ADD COLUMN ${column} REAL`)
 }
@@ -133,8 +134,8 @@ const upsertStmt = db.prepare(`
     url, source, source_detail, description,
     salary_text, salary_min, salary_max, salary_currency, salary_period,
     posted_at, work_mode, employment_type, career_role, sponsorship, sponsorship_reasons,
-    profiles, groups, score, first_seen, last_seen, latitude, longitude
-  ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    profiles, groups, score, first_seen, last_seen, latitude, longitude, remote_student_note
+  ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   ON CONFLICT(id) DO UPDATE SET
     last_seen   = excluded.last_seen,
     latitude    = COALESCE(excluded.latitude, jobs.latitude),
@@ -153,6 +154,7 @@ const upsertStmt = db.prepare(`
     province    = excluded.province,
     country     = excluded.country,
     work_mode   = excluded.work_mode,
+    remote_student_note = excluded.remote_student_note,
     employment_type = excluded.employment_type,
     career_role = excluded.career_role,
     sponsorship = excluded.sponsorship,
@@ -205,6 +207,7 @@ export function upsertJob(j) {
     j.seenAt,
     j.latitude ?? null,
     j.longitude ?? null,
+    j.remoteStudentNote ?? null,
   )
   upsertSourceStmt.run(j.id, j.source, j.sourceDetail ?? '', j.url, j.seenAt)
   return isNew

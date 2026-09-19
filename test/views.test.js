@@ -15,8 +15,8 @@ test('every view has the fields the UI and the query builder need', () => {
 test('Limerick part-time view requires part-time evidence regardless of category or seniority', () => {
   const db = new DatabaseSync(':memory:')
   try {
-    db.exec('CREATE TABLE jobs (title TEXT, region_key TEXT, work_mode TEXT, employment_type TEXT, career_role INTEGER, groups TEXT)')
-    const insert = db.prepare('INSERT INTO jobs VALUES (?,?,?,?,?,?)')
+    db.exec("CREATE TABLE jobs (title TEXT, region_key TEXT, work_mode TEXT, employment_type TEXT, career_role INTEGER, groups TEXT, remote_student_note TEXT DEFAULT 'Confirm hours')")
+    const insert = db.prepare('INSERT INTO jobs (title,region_key,work_mode,employment_type,career_role,groups) VALUES (?,?,?,?,?,?)')
     for (const [title, region, mode, type, career, groups] of [
       ['Part-time shop assistant', 'limerick', 'onsite', 'part_time', 0, 'student'],
       ['Part-time accountant', 'limerick', 'onsite', 'part_time', 1, 'practice'],
@@ -40,11 +40,25 @@ test('an unknown view produces no clause rather than an empty filter', () => {
   assert.equal(viewClause(undefined), null)
 })
 
+test('remote student view excludes unassessed, full-time and hybrid rows', () => {
+  const db = new DatabaseSync(':memory:')
+  try {
+    db.exec('CREATE TABLE jobs (title TEXT, remote_student_note TEXT, work_mode TEXT, employment_type TEXT)')
+    const insert = db.prepare('INSERT INTO jobs VALUES (?,?,?,?)')
+    insert.run('Remote support', 'Confirm hours', 'remote', 'part_time')
+    insert.run('Unassessed', null, 'remote', 'part_time')
+    insert.run('Full time', 'Old note', 'remote', 'full_time')
+    insert.run('Hybrid', 'Old note', 'hybrid', 'part_time')
+    const c = viewClause('ireland-remote-pt')
+    assert.deepEqual(db.prepare(`SELECT title FROM jobs j WHERE ${c.sql}`).all(...c.params).map(j => j.title), ['Remote support'])
+  } finally { db.close() }
+})
+
 test('nearby option includes named towns while preserving employment and county boundaries', () => {
   const db = new DatabaseSync(':memory:')
   try {
-    db.exec('CREATE TABLE jobs (location_raw TEXT, region_key TEXT, work_mode TEXT, employment_type TEXT, career_role INTEGER, groups TEXT)')
-    const insert = db.prepare('INSERT INTO jobs VALUES (?,?,\'onsite\',?,0,\'student\')')
+    db.exec('CREATE TABLE jobs (location_raw TEXT, region_key TEXT, work_mode TEXT, employment_type TEXT, career_role INTEGER, groups TEXT, remote_student_note TEXT)')
+    const insert = db.prepare('INSERT INTO jobs VALUES (?,?,\'onsite\',?,0,\'student\',NULL)')
     for (const [location, region, type = 'part_time'] of [
       ['Limerick', 'limerick'], ['Shannon, Co. Clare', 'clare'], ['Ennis', 'clare'], ['Nenagh, Tipperary', 'tipperary'],
       ['Kilrush', 'clare'], ['Clonmel', 'tipperary'], ['Carrick-on-Shannon', 'leitrim'], ['Enniscorthy', 'wexford'],

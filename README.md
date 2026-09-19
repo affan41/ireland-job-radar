@@ -116,8 +116,8 @@ at the University of Limerick, which means two things at once:
 
 - Anything in **Limerick**, or in Castletroy, Raheen, Annacotty, Shannon, Ennis,
   Nenagh, Adare or Newcastle West.
-- Anything **remote**, wherever the employer sits, since a job with no address is a
-  job you can do from a room in Limerick.
+- Remote leads that pass the Ireland/student checks described below. A remote
+  label alone does not mean a job can be done from Ireland.
 
 The advert must indicate part-time work, through its title, description, stated
 weekly hours or a source employment-type field. Search keywords, a student category,
@@ -153,7 +153,7 @@ Applegreen, Circle K and local hotels. Brand searches run separately for Limeric
 Shannon, Ennis and Nenagh. Role searches also cover Dooradoyle, Caherdavin, Corbally, Mungret and Ballysimon.
 A further 190 named shops, hospitality and campus employers are searched in Limerick,
 based on the Crescent, Castletroy, Parkway and Arthurs Quay directories plus broader
-local employer targets. This brings the default plan to 235 names and 900 searches.
+local employer targets. With 33 remote searches, this brings the default plan to 235 local employer names and 921 searches.
 The directory inventory and its sources are in `src/local-employers.js`.
 These are search targets, not a claim that every brand has a suitable vacancy.
 
@@ -163,6 +163,31 @@ existing H&M and JYSK boards. NEXT's weekly shift notation (for example `5.50hrs
 and Workable's employment-type fields are used to identify part-time hours.
 
 Customise `localSearch.brands` and `localSearch.brandCities` in `config.json`.
+
+## Remote part time for students in Ireland
+
+The `Remote part time` tab focuses on support, administration, tutoring, data entry,
+research assistance and related roles. It requires advertised part-time work, a
+remote working pattern and a hiring location that includes Ireland. It excludes
+senior roles, hybrid work, explicit freelance/self-employed gigs, survey panels
+and known schedules above 20 hours/week. Missing hours are clearly flagged on
+each card for checking with the employer. These are potential matches, not a
+guarantee of eligibility, experience fit or compatibility with lectures.
+
+The 33 nationwide searches include role, evening/weekend and named employer
+queries (Capita, Cpl, Abtran, Fexco, Amazon, Apple, Concentrix, TELUS Digital,
+Wayfair, Shopify, Distilled and LivTours). Search targets do not imply current
+vacancies. Distilled's public Recruitee feed also supplies live adverts directly.
+Remote boards preserve structured employment types and full descriptions;
+missing hiring restrictions are no longer treated as worldwide eligibility.
+Remotive's full public feed and up to 500 recent Himalayas listings are checked,
+alongside Jobicy and Arbeitnow.
+
+Assessment uses the full source text before storage truncates the excerpt. Older
+stored jobs are assessed as they are encountered in a refresh, rather than
+guessing eligibility from incomplete cached descriptions. On Stamp 2, check the
+[official student work conditions](https://www.irishimmigration.ie/coming-to-study-in-ireland/what-are-my-study-options/planning-to-study-in-ireland/)
+and confirm hours, employee status and permission requirements with the employer.
 Set `brands` to `[]` to turn off brand searches. `localSearch.shops` and
 `localSearch.shopLocation` control the extra local employer targets. `localSites.enabled`
 and `jobAlert.enabled` control the new direct-site and independent-board collectors. `tesco.enabled` and

@@ -4,6 +4,21 @@
 
 export const VIEWS = [
   {
+    key: 'ireland-remote-pt',
+    name: 'Remote part time',
+    country: 'ie',
+    remoteStudent: true,
+    note: 'Remote part-time leads advertised for Ireland or a wider hiring area that includes Ireland. '
+      + 'Focused on support, admin, tutoring and other work that may fit around study. '
+      + 'Known schedules over 20 hours/week, freelance gigs, hybrid jobs and senior roles are excluded. '
+      + 'Where hours are missing, confirm them before applying. These are potential matches, not verified student eligibility. '
+      + 'Stamp 2 permits up to 20 hours/week during term; self-employment is not permitted.',
+    noteLink: {
+      href: 'https://www.irishimmigration.ie/coming-to-study-in-ireland/what-are-my-study-options/planning-to-study-in-ireland/',
+      text: 'Student work conditions',
+    },
+  },
+  {
     key: 'limerick-pt',
     name: 'Limerick part time',
     country: 'ie',
@@ -44,13 +59,14 @@ export function viewClause(key, { includeNearby = false } = {}) {
 
   const where = []
   const params = []
+  if (v.remoteStudent) where.push("j.remote_student_note IS NOT NULL AND j.work_mode = 'remote' AND j.employment_type = 'part_time'")
 
   const location = []
   if (v.regionKeys?.length) {
     location.push(`j.region_key IN (${v.regionKeys.map(() => '?').join(',')})`)
     params.push(...v.regionKeys)
   }
-  if (v.includeRemote) location.push(`(j.work_mode = 'remote' OR j.region_key = 'remote')`)
+  if (v.includeRemote) location.push(`(j.work_mode = 'remote' AND j.remote_student_note IS NOT NULL)`)
   if (key === 'limerick-pt' && includeNearby) {
     // Match whole place names within the correct county, not all of Clare or
     // Tipperary (and never Carrick-on-Shannon or Enniscorthy).

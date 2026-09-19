@@ -61,19 +61,25 @@ const CITY_QUERIES = [
 ]
 
 // Run against the whole country, because work you do from home has no address.
-const REMOTE_QUERIES = [
-  ['remote part time', 'studentgeneral'],
-  ['work from home', 'studentgeneral'],
-  ['remote customer service', 'studentsupport'],
-  ['customer support remote', 'studentsupport'],
-  ['virtual assistant', 'studentsupport'],
-  ['remote data entry', 'studentsupport'],
-  ['online tutor', 'studentsupport'],
-  ['remote administrator', 'studentsupport'],
-  ['transcription', 'studentsupport'],
-  ['social media assistant', 'studentsupport'],
-  ['remote moderator', 'studentsupport'],
-  ['data annotation', 'studentsupport'],
+export const REMOTE_QUERIES = [
+  ...[
+    'remote part time', 'work from home part time', 'remote evening part time',
+    'remote weekend part time', 'remote student part time',
+  ].map(q => [q, 'studentgeneral']),
+  ...[
+    'remote customer service part time', 'customer support remote part time',
+    'remote chat support part time', 'remote email support part time',
+    'virtual assistant part time', 'remote data entry part time',
+    'online tutor part time', 'remote administrator part time',
+    'remote transcription part time', 'remote social media assistant part time',
+    'remote moderator part time', 'remote research assistant part time',
+    'remote appointment setter part time', 'remote contact centre part time',
+    'remote accounts assistant part time', 'remote receptionist part time',
+  ].map(q => [q, 'studentsupport']),
+  ...[
+    'Capita', 'Cpl', 'Abtran', 'Fexco', 'Amazon', 'Apple', 'Concentrix',
+    'TELUS Digital', 'Wayfair', 'Shopify', 'Distilled', 'LivTours',
+  ].map(brand => [`${brand} remote part time`, 'studentsupport']),
 ]
 
 // Brand searches supplement role searches. A returned result still needs its

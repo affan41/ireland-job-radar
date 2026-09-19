@@ -3,6 +3,7 @@ import { resolveRegion, detectWorkMode, countryFallback } from './regions.js'
 import { classify, PROFILE_BY_ID } from './profiles.js'
 import { detectEmploymentType } from './employment.js'
 import { assessSponsorship } from './sponsorship.js'
+import { assessRemoteStudent } from './remote-student.js'
 
 const ENTITIES = {
   '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&#39;': "'", '&apos;': "'",
@@ -150,6 +151,15 @@ export function buildJob(raw, seenAt) {
   const salary = parseSalary(raw.salaryText, raw)
   const country = region.country ?? raw.country ?? null
   const sponsorship = assessSponsorship({ title, description, company, source: raw.source, country })
+  const workMode = raw.workMode || detectWorkMode(title, description, locationRaw)
+  const remoteStudentNote = assessRemoteStudent({ title, description: clean(raw.description, Infinity), locationRaw,
+    workMode, employmentType, statedEmploymentType: raw.employmentType, careerRole: SENIOR_TITLE.test(title) })
+  // A direct employer feed or an employer's hiring history does not establish
+  // sponsorship for a part-time student lead. Keep only advert-level signals.
+  if (remoteStudentNote && sponsorship.level === 'likely') {
+    sponsorship.level = 'unknown'
+    sponsorship.reasons = []
+  }
 
   return {
     id: jobId(title, company, locationRaw),
@@ -168,7 +178,8 @@ export function buildJob(raw, seenAt) {
     description,
     ...salary,
     postedAt: toDateISO(raw.postedAt),
-    workMode: raw.workMode || detectWorkMode(title, description, locationRaw),
+    workMode,
+    remoteStudentNote,
     employmentType,
     // Whether the title reads as a career position rather than casual work.
     careerRole: SENIOR_TITLE.test(title) ? 1 : 0,

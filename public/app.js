@@ -344,6 +344,7 @@ function jobCard(j) {
       ${isNew ? '<span class="tag new">New</span>' : ''}
     </div>
     ${j.description ? `<p class="job-snippet">${esc(j.description)}</p>` : ''}
+    ${j.remote_student_note ? `<p class="student-checks">Before applying: ${esc(j.remote_student_note)}</p>` : ''}
     <div class="job-foot">
       <span>${esc(j.location_raw || '')}</span>
       ${posted ? `<span class="sep">·</span><span>${timeAgo(posted)}</span>` : ''}
