@@ -19,9 +19,9 @@ const validPoint = (lat, lon) => typeof lat === 'number' && typeof lon === 'numb
 
 export function estimateDistance(job) {
   if (job.work_mode === 'remote') return { kind: 'remote', label: 'Remote', detail: 'No regular commute stated', km: null }
-  const unavailable = { kind: 'unknown', label: 'Distance unavailable', detail: 'A specific workplace location is needed', km: null }
+  const unavailable = { kind: 'unknown', label: 'Exact workplace unknown', detail: 'A precise workplace address or named shopping centre is needed', km: null }
   let point, kind, place
-  if (validPoint(job.latitude, job.longitude)) {
+  if (job.location_precision === 'workplace' && validPoint(job.latitude, job.longitude)) {
     point = { latitude: job.latitude, longitude: job.longitude }
     kind = 'workplace'; place = job.location_raw || 'Advertised workplace'
   } else {
@@ -30,8 +30,8 @@ export function estimateDistance(job) {
     // mention a head office, customers or branches unrelated to this vacancy.
     const location = normalize(job.location_raw).replace(/\b(?:county|co)\s+[a-z]+\b/g, '').trim()
     if (!location || /\b(?:nationwide|multiple locations|various locations)\b/.test(location)) return unavailable
-    const text = `${location} ${normalize(job.title)}`
-    const matches = places.filter(p => (!p.region || !job.region_key || p.region === job.region_key)
+    const text = location
+    const matches = places.filter(p => /Shopping Centre|Retail Park|Town Centre/i.test(p.name) && (!p.region || !job.region_key || p.region === job.region_key)
       && (p.aliases || [p.name]).some(name => contains(text, name)))
     if (!matches.length) return unavailable
     // A list of distant towns is not a single workplace. Nearby nested labels

@@ -6,7 +6,8 @@
   "careerjet": {
     "enabled": true,
     "maxPages": 3,
-    "affid": null
+    "apiKey": null,
+    "_comment": "Documented publisher API. Prefer CAREERJET_API_KEY environment variable. Requires a manual refresh with actual client context; skipped on schedules."
   },
   "accaCareers": {
     "_comment": "Official ACCA Careers RSS search for Ireland. No key required.",
@@ -110,6 +111,19 @@
   "retailEmployers": {
     "_comment": "Direct public vacancies and full descriptions. Dunnes and Aldi remain covered through general searches because their direct sites restrict automated access.",
     "enabled": true,
-    "providers": ["primark", "lidl", "mcdonalds", "supermacs", "boots"]
+    "providers": [
+      "primark",
+      "lidl",
+      "mcdonalds",
+      "supermacs",
+      "boots"
+    ]
+  },
+  "priorityEmployers": {
+    "enabled": true
+  },
+  "verification": {
+    "enabled": true,
+    "maxPerRefresh": 150
   }
 }

@@ -16,7 +16,7 @@ const defaults = {
   countries: ['ie', 'cy', 'mt'],
   refreshOnStart: true,
   pruneAfterDays: 30,
-  careerjet: { enabled: true, maxPages: 12, affid: null },
+  careerjet: { enabled: true, maxPages: 10, apiKey: null },
   accaCareers: { enabled: true, maxPages: 40 },
   adzuna: { enabled: true, appId: null, appKey: null, maxPages: 8 },
   jobsIreland: { enabled: true, latestPageSize: 250, latestPages: 8, partTimeLimit: 500 },
@@ -41,6 +41,8 @@ const defaults = {
   localSearch: { ...DEFAULT_LOCAL_SEARCH },
   tesco: { enabled: true, maxPages: 20 },
   localSites: { enabled: true },
+  priorityEmployers: {enabled: true},
+  verification: {enabled: true, maxPerRefresh: 150},
   jobAlert: { enabled: true, maxPages: 15 },
   retailEmployers: { enabled: true, providers: ['primark', 'lidl', 'mcdonalds', 'supermacs', 'boots'] },
   employers: { enabled: true, companies: DEFAULT_COMPANIES },
@@ -71,4 +73,4 @@ export const config = deepMerge(defaults, fileConfig)
 if (process.env.PORT) config.port = Number(process.env.PORT)
 if (process.env.ADZUNA_APP_ID) config.adzuna.appId = process.env.ADZUNA_APP_ID
 if (process.env.ADZUNA_APP_KEY) config.adzuna.appKey = process.env.ADZUNA_APP_KEY
-if (process.env.CAREERJET_AFFID) config.careerjet.affid = process.env.CAREERJET_AFFID
+if (process.env.CAREERJET_API_KEY) config.careerjet.apiKey = process.env.CAREERJET_API_KEY

@@ -11,6 +11,8 @@ export function parseJobAlert(html) {
     const types = (j.jobTypes || []).map(t => t.name).join(' ')
     return {
       title: j.title, company: j.company?.name, locationRaw: j.address.formatted || [j.address.city, j.address.county].filter(Boolean).join(', '),
+      employerJobId: String(j.id || j.slug), closingAt: j.closingDate || j.expiresAt || null,
+      applicationUrl: j.applicationUrl || null,
       description: j.description, postedAt: j.postedAt, country: 'ie',
       source: 'jobalert', sourceDetail: 'JobAlert.ie', url: `https://www.jobalert.ie/job/${encodeURIComponent(j.slug)}`,
       employmentType: /full.time/i.test(types) ? 'full_time' : /part.time/i.test(types) ? 'part_time' : undefined,
@@ -29,6 +31,6 @@ export async function fetchJobAlert({request = getText, maxPages = 15, onProgres
       for (const job of result.jobs) jobs.set(job.url, job)
     } catch (error) { errors.push(`JobAlert page ${page + 1}: ${error.message}`); break }
   }
-  onProgress?.(`JobAlert.ie: ${jobs.size} open adverts from the Limerick part-time search`)
+  onProgress?.(`JobAlert.ie: ${jobs.size} listed adverts from the Limerick part-time search`)
   return {jobs: [...jobs.values()], errors}
 }

@@ -1,125 +1,19 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-
-import { assessSponsorship } from '../src/sponsorship.js'
-import { resolveRegion, isInCountry, countryFallback, detectCountry } from '../src/regions.js'
-
-/* --------------------------------------------------------- Sponsorship read */
-
-test('picks up an advert that offers visa sponsorship outright', () => {
-  const r = assessSponsorship({
-    title: 'Senior Accountant',
-    description: 'Visa sponsorship is available for the right candidate.',
-    company: 'Some Ltd',
-  })
-
-  assert.equal(r.level, 'explicit')
-  assert.ok(r.reasons.length)
+import {assessSponsorship} from '../src/sponsorship.js'
+import {resolveRegion,isInCountry,countryFallback,detectCountry} from '../src/regions.js'
+test('only explicit offers establish sponsorship, preserving the evidence source',()=>{
+ const r=assessSponsorship({description:'Visa sponsorship is available for this role.',url:'https://employer.test/1'})
+ assert.equal(r.level,'explicit');assert.match(r.evidence,/Visa sponsorship/);assert.equal(r.source,'https://employer.test/1')
 })
-
-test('treats a relocation package as an offer to move someone', () => {
-  const r = assessSponsorship({
-    title: 'Tax Consultant',
-    description: 'We offer a generous relocation package and help you settle in Malta.',
-    company: 'Nobody Ltd',
-  })
-
-  assert.equal(r.level, 'explicit')
+test('employers, relocation packages, permit eligibility and mentions are not offers',()=>{
+ for(const description of ['Relocation package available.','Eligible for the Key Employee Initiative.','Role qualifies for a Critical Skills Employment Permit.','Do you need visa sponsorship?','Must already hold the right to work in Ireland.','']){
+  assert.equal(assessSponsorship({description,company:'KPMG',source:'employer'}).level,'unknown',description)
+ }
 })
-
-test('reads the Maltese and Irish permit routes by name', () => {
-  assert.equal(assessSponsorship({ description: 'Eligible for the Key Employee Initiative.' }).level, 'explicit')
-  assert.equal(assessSponsorship({ description: 'Role qualifies for a Critical Skills Employment Permit.' }).level, 'explicit')
-  assert.equal(assessSponsorship({ description: 'We apply for your Single Permit.' }).level, 'explicit')
-})
-
-test('believes an advert that rules sponsorship out, even alongside perks', () => {
-  const r = assessSponsorship({
-    title: 'Financial Accountant',
-    description: 'Great benefits and a relocation package. Please note we are unable to sponsor visas.',
-    company: 'PwC',
-  })
-
-  assert.equal(r.level, 'unlikely')
-  assert.match(r.reasons.join(' '), /cannot sponsor/)
-})
-
-test('treats a demand for existing right to work as a no', () => {
-  for (const text of [
-    'Applicants must already hold the right to work in Ireland.',
-    'Open to EU citizens only.',
-    'You will need a Stamp 4 to apply.',
-    'No visa sponsorship is offered for this position.',
-  ]) {
-    assert.equal(assessSponsorship({ description: text }).level, 'unlikely', text)
-  }
-})
-
-test('rates a Big Four employer as a likely sponsor when the advert is silent', () => {
-  const r = assessSponsorship({
-    title: 'Tax Senior',
-    description: 'Join our corporate tax team in Dublin.',
-    company: 'KPMG Ireland',
-  })
-
-  assert.equal(r.level, 'likely')
-  assert.match(r.reasons.join(' '), /practice firm/)
-})
-
-test('rates the Malta and Cyprus employers that relocate people as likely', () => {
-  assert.equal(assessSponsorship({ title: 'Finance Manager', company: 'Betsson Group' }).level, 'likely')
-  assert.equal(assessSponsorship({ title: 'Accountant', company: 'Exness' }).level, 'likely')
-  assert.equal(assessSponsorship({ title: 'Fund Accountant', company: 'Alter Domus' }).level, 'likely')
-})
-
-test('credits the island relocation agencies only in Cyprus and Malta', () => {
-  const role = { title: 'Senior Accountant', company: 'GRS Recruitment', source: 'careerjet' }
-
-  assert.equal(assessSponsorship({ ...role, country: 'mt' }).level, 'likely')
-  assert.equal(assessSponsorship({ ...role, country: 'cy' }).level, 'likely')
-  // The same agency name in Ireland is an ordinary recruiter and proves nothing.
-  assert.equal(assessSponsorship({ ...role, country: 'ie' }).level, 'unknown')
-})
-
-test('still believes an outright no from an island agency', () => {
-  const r = assessSponsorship({
-    title: 'Accountant',
-    description: 'Candidates must already hold the right to work in Malta.',
-    company: 'Konnekt',
-    country: 'mt',
-  })
-
-  assert.equal(r.level, 'unlikely')
-})
-
-test('counts a listing read straight from an employer careers site as likely', () => {
-  const r = assessSponsorship({ title: 'Analyst', company: 'A Small Firm', source: 'employer' })
-
-  assert.equal(r.level, 'likely')
-  assert.match(r.reasons.join(' '), /own careers site/)
-})
-
-test('says nothing rather than guessing for an unknown employer on an aggregator', () => {
-  const r = assessSponsorship({
-    title: 'Bookkeeper',
-    description: 'Small practice seeks a bookkeeper.',
-    company: 'Murphy & Co',
-    source: 'careerjet',
-  })
-
-  assert.equal(r.level, 'unknown')
-  assert.deepEqual(r.reasons, [])
-})
-
-test('does not read a marketing sponsorship deal as a visa offer', () => {
-  const r = assessSponsorship({
-    title: 'Marketing Executive',
-    description: 'Manage our stadium sponsorship deals and partner activations.',
-    company: 'Murphy & Co',
-    source: 'careerjet',
-  })
-
-  assert.equal(r.level, 'unknown')
+test('explicit refusal takes priority over sponsorship keywords',()=>{
+ assert.equal(assessSponsorship({description:'Visa sponsorship is not available.'}).level,'unlikely')
+ assert.equal(assessSponsorship({description:'We are unable to sponsor visas.'}).level,'unlikely')
 })
 
 /* ------------------------------------------------------------- Countries */

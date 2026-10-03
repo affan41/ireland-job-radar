@@ -9,10 +9,10 @@
 // Search intent helps identify relevant categories, but cannot establish hours.
 // Normalisation requires part-time evidence before granting a student category.
 
-import { getJSON, sleep } from './http.js'
+import { sleep } from './http.js'
+import {careerjetAccessIssue,careerjetQuery} from './careerjet-api.js'
 import { LOCAL_SHOPS } from '../local-employers.js'
 
-const ENDPOINT = 'http://public.api.careerjet.net/search'
 const PAGE_SIZE = 99
 
 // Query text paired with the profile it is standing in for.
@@ -133,7 +133,7 @@ export async function fetchLocal({
   maxPages = 4,
   concurrency = 5,
   delayMs = 120,
-  affid,
+  apiKey, requestContext,
   onProgress,
   brands = DEFAULT_LOCAL_SEARCH.brands,
   brandCities = DEFAULT_LOCAL_SEARCH.brandCities,
@@ -142,6 +142,8 @@ export async function fetchLocal({
 } = {}) {
   const out = []
   const errors = []
+  const accessIssue=careerjetAccessIssue({apiKey,requestContext})
+  if(accessIssue){onProgress?.(accessIssue);return {jobs:[],errors:[accessIssue],skipped:accessIssue}}
 
   const searches = localSearches({ cities, includeRemote, remoteLocation, brands, brandCities, shops, shopLocation })
 
@@ -152,22 +154,20 @@ export async function fetchLocal({
     while (cursor < searches.length) {
       const { q, intent, location, remote } = searches[cursor++]
 
-      for (let page = 1; page <= maxPages; page++) {
+      for (let page = 1; page <= Math.min(maxPages,10); page++) {
         const params = new URLSearchParams({
           keywords: q,
           location,
           locale_code: locale,
-          pagesize: String(PAGE_SIZE),
+          page_size: String(PAGE_SIZE), fragment_size: '1000',
           page: String(page),
           sort: 'date',
-          user_ip: '87.44.1.1',
-          user_agent: 'Mozilla/5.0',
+
         })
-        if (affid) params.set('affid', affid)
 
         let data
         try {
-          data = await getJSON(`${ENDPOINT}?${params}`, { headers: { Referer: 'http://localhost/job-radar' } })
+          data = await careerjetQuery(params,{apiKey,requestContext})
         } catch (err) {
           errors.push(`local ${location} "${q}" p${page}: ${err.message}`)
           break

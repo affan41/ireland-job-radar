@@ -1,5 +1,7 @@
 import { DatabaseSync } from 'node:sqlite'
+import {createHash} from 'node:crypto'
 import { VIEWS, viewClause } from './views.js'
+import {canonicalJobUrl, employerJobKey} from './job-evidence.js'
 import { estimateDistance } from './distance.js'
 import { mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -84,6 +86,16 @@ db.exec(`
 // Existing databases pre-date some fields. Keep upgrades automatic so a user can
 // pull a newer version and start it without rebuilding or losing shortlists.
 const jobColumns = new Set(db.prepare('PRAGMA table_info(jobs)').all().map((c) => c.name))
+const evidenceColumns = {
+  original_title: 'TEXT', title_repair_note: 'TEXT', full_description: 'TEXT', closing_at: 'TEXT', checked_at: 'TEXT', verified_at: 'TEXT',
+  verification_status: "TEXT DEFAULT 'unverified'", verification_reason: 'TEXT',
+  application_url: 'TEXT', employer_job_id: 'TEXT', hours_min: 'REAL', hours_max: 'REAL',
+  hours_evidence: 'TEXT', shifts: 'TEXT', availability: 'TEXT', conflicts: 'TEXT',
+  scheme: "TEXT DEFAULT 'ordinary'", location_precision: 'TEXT', title_needs_review: 'INTEGER DEFAULT 0',
+  sponsorship_evidence: 'TEXT', sponsorship_source: 'TEXT', merged_into: 'TEXT',
+}
+for (const [column,type] of Object.entries(evidenceColumns)) if(!jobColumns.has(column)) db.exec(`ALTER TABLE jobs ADD COLUMN ${column} ${type}`)
+db.exec('CREATE TABLE IF NOT EXISTS job_identity (alias TEXT PRIMARY KEY, job_id TEXT NOT NULL)')
 if (!jobColumns.has('remote_student_note')) db.exec('ALTER TABLE jobs ADD COLUMN remote_student_note TEXT')
 for (const column of ['latitude', 'longitude']) {
   if (!jobColumns.has(column)) db.exec(`ALTER TABLE jobs ADD COLUMN ${column} REAL`)
@@ -103,6 +115,8 @@ if (!jobColumns.has('sponsorship')) {
   db.exec("ALTER TABLE jobs ADD COLUMN sponsorship_reasons TEXT")
   db.exec("CREATE INDEX IF NOT EXISTS idx_jobs_sponsorship ON jobs(sponsorship)")
 }
+
+if (!jobColumns.has('verification_status')) db.exec("UPDATE jobs SET sponsorship='unknown', sponsorship_reasons=NULL")
 
 // Seed provenance for databases created before multi-source tracking existed.
 db.exec(`
@@ -174,7 +188,42 @@ const upsertSourceStmt = db.prepare(`
 `)
 
 // Returns true when this was a job we had not seen before.
-export function upsertJob(j) {
+export function identityAliases(j) {
+  const aliases = [j.applicationUrl, j.url].map(canonicalJobUrl).filter(Boolean).filter(value=>{const u=new URL(value);return u.hash || [...u.searchParams.keys()].some(k=>/^(?:id|record|jobid|vacancyid|gh_jid|requisitionid)$/i.test(k)) || (u.pathname.split('/').filter(Boolean).length>=2 && !/search|browse-jobs|vacancy-search/i.test(u.pathname))}).map(u=>`url:${u}`)
+  const key=employerJobKey(j.applicationUrl)||employerJobKey(j.url)
+  if(key)aliases.push(`employer:${key}`)
+  else if(j.employerJobId && j.company)aliases.push(`employer:${j.company.toLowerCase()}:${j.employerJobId}`)
+  return [...new Set(aliases)]
+}
+export function mergeJobs(keep, drop) {
+  if(keep===drop)return
+  const saved=db.prepare('SELECT * FROM saved WHERE job_id=?').get(drop)
+  if(saved){const own=db.prepare('SELECT * FROM saved WHERE job_id=?').get(keep);db.prepare('INSERT OR REPLACE INTO saved VALUES (?,?,?)').run(keep,[own?.note,saved.note].filter(Boolean).join('\n')||null,own?.saved_at||saved.saved_at)}
+  db.prepare('INSERT OR IGNORE INTO hidden SELECT ?, hidden_at FROM hidden WHERE job_id=?').run(keep,drop)
+  db.prepare('INSERT OR IGNORE INTO job_sources SELECT ?,source,source_detail,url,last_seen FROM job_sources WHERE job_id=?').run(keep,drop)
+  db.prepare('UPDATE job_identity SET job_id=? WHERE job_id=?').run(keep,drop)
+  db.prepare('UPDATE jobs SET merged_into=? WHERE id=?').run(keep,drop)
+}
+export function upsertJob(input) {
+  const aliases=identityAliases(input)
+  const owners=[...new Set(aliases.map(a=>db.prepare('SELECT job_id FROM job_identity WHERE alias=?').get(a)?.job_id).filter(Boolean))]
+  const previous=db.prepare('SELECT url,application_url,employer_job_id,company FROM jobs WHERE id=?').get(input.id)
+  const priorAliases=previous ? identityAliases({url:previous.url,applicationUrl:previous.application_url,employerJobId:previous.employer_job_id,company:previous.company}) : []
+  // Identical titles at one workplace can describe separate vacancies. Once
+  // both records have distinct vacancy identities, the title hash cannot merge them.
+  const distinct=aliases.length && priorAliases.length && !aliases.some(a=>priorAliases.includes(a))
+  const fallbackId=distinct ? createHash('sha256').update(aliases[0]).digest('hex').slice(0,24) : input.id
+  const j={...input,id:owners[0]||fallbackId}
+  for(const other of owners.slice(1))mergeJobs(j.id,other)
+  if(j.id!==input.id && previous && !distinct)mergeJobs(j.id,input.id)
+  for(const alias of aliases)db.prepare('INSERT OR REPLACE INTO job_identity VALUES (?,?)').run(alias,j.id)
+  const existing=db.prepare('SELECT verified_at,verification_status FROM jobs WHERE id=?').get(j.id)
+  if(existing?.verified_at && !j.checkedAt) {
+    db.prepare('UPDATE jobs SET last_seen=? WHERE id=?').run(j.seenAt,j.id)
+    upsertSourceStmt.run(j.id,j.source,j.sourceDetail??'',j.url,j.seenAt)
+    return false
+  }
+
   const isNew = !existsStmt.get(j.id)
   upsertStmt.run(
     j.id,
@@ -209,6 +258,15 @@ export function upsertJob(j) {
     j.longitude ?? null,
     j.remoteStudentNote ?? null,
   )
+  db.prepare(`UPDATE jobs SET title=?,full_description=?,closing_at=COALESCE(?,closing_at),checked_at=COALESCE(?,checked_at),
+    verified_at=COALESCE(?,verified_at),verification_status=?,verification_reason=?,application_url=COALESCE(?,application_url),
+    employer_job_id=COALESCE(?,employer_job_id),hours_min=?,hours_max=?,hours_evidence=?,shifts=?,availability=?,conflicts=?,scheme=?,
+    location_precision=?,title_needs_review=?,sponsorship_evidence=?,sponsorship_source=? WHERE id=?`).run(
+    j.title,j.fullDescription||j.description||'',j.closingAt??null,j.checkedAt??null,j.verifiedAt??null,
+    j.verificationStatus||'unverified',j.verificationReason||null,j.applicationUrl??null,j.employerJobId??null,
+    j.hoursMin??null,j.hoursMax??null,JSON.stringify(j.hoursEvidence||[]),JSON.stringify(j.shifts||[]),
+    (j.availability||[]).join(','),JSON.stringify(j.conflicts||[]),j.scheme||'ordinary',j.locationPrecision??null,
+    j.titleNeedsReview?1:0,j.sponsorshipEvidence??null,j.sponsorshipSource??null,j.id)
   upsertSourceStmt.run(j.id, j.source, j.sourceDetail ?? '', j.url, j.seenAt)
   return isNew
 }
@@ -242,8 +300,19 @@ const SORTS = {
 // Builds the shared WHERE clause. `skip` names a filter to leave out, which is how
 // each facet counts what you would get if you changed only that one filter.
 function buildWhere(opts = {}, skip = null) {
-  const where = []
+  const where = ["j.merged_into IS NULL", "COALESCE(j.title_needs_review,0)=0"]
   const params = []
+  if(opts.status === 'closed') where.push("(j.verification_status='closed' OR (j.closing_at IS NOT NULL AND substr(j.closing_at,1,10)<date('now')))")
+  else if(opts.status === 'open') where.push("j.verification_status='open' AND julianday(j.verified_at) >= julianday('now','-7 days') AND (j.closing_at IS NULL OR substr(j.closing_at,1,10)>=date('now'))")
+  else if(opts.status === 'unverified') where.push("(j.verification_status='unverified' OR (j.verification_status='open' AND julianday(j.verified_at) < julianday('now','-7 days'))) AND (j.closing_at IS NULL OR substr(j.closing_at,1,10)>=date('now'))")
+  else where.push("j.verification_status!='closed' AND (j.closing_at IS NULL OR substr(j.closing_at,1,10)>=date('now'))")
+  if(opts.scheme === 'schemes')where.push("j.scheme IN ('ce','wpep')")
+  else where.push("COALESCE(j.scheme,'ordinary')='ordinary'")
+  if(Number(opts.maxHours)>0){where.push('j.hours_max IS NOT NULL AND j.hours_max<=?');params.push(Number(opts.maxHours))}
+  if(opts.availability){where.push("(','||COALESCE(j.availability,'')||',') LIKE ?");params.push(`%,${opts.availability},%`)}
+  const unavailable = {weekends:['weekdays','variable'],evenings:['mornings','nights','variable'],weekdays:['weekends','variable']}[opts.availability] || []
+  for(const shift of unavailable){where.push("(','||COALESCE(j.availability,'')||',') NOT LIKE ?");params.push(`%,${shift},%`)}
+  if(opts.noConflicts)where.push("COALESCE(j.conflicts,'[]')='[]'")
 
   // The country switch is deliberately not skippable: every other facet count is
   // meant to describe the country you are currently looking at.
@@ -326,6 +395,11 @@ const JOINS = `FROM jobs j
   LEFT JOIN saved  s ON s.job_id = j.id
   LEFT JOIN hidden h ON h.job_id = j.id`
 
+export function effectiveStatus(j, now=Date.now()) {
+  if(j.verification_status==='closed' || (j.closing_at && j.closing_at.slice(0,10)<new Date(now).toLocaleDateString('en-CA',{timeZone:'Europe/Dublin'})))return 'closed'
+  if(j.verification_status==='open' && Date.parse(j.verified_at)>=now-7*86400000)return 'open'
+  return 'unverified'
+}
 export function queryJobs(opts = {}) {
   const { clause, params } = buildWhere(opts)
   const order = SORTS[opts.sort] || SORTS.newest
@@ -339,7 +413,7 @@ export function queryJobs(opts = {}) {
     ${JOINS} ${clause} ORDER BY ${order} LIMIT ? OFFSET ?
   `).all(...params, limit, offset)
 
-  return { total, rows: rows.map(j => ({ ...j, distance: estimateDistance(j) })), limit, offset }
+  return { total, rows: rows.map(j => ({ ...j, verification_status: effectiveStatus(j), distance: estimateDistance(j) })), limit, offset }
 }
 
 // Counts for every filter option, across the whole result set rather than the
@@ -424,17 +498,16 @@ export function setHidden(jobId, hidden) {
 
 export function stats() {
   const total = db.prepare('SELECT COUNT(*) AS n FROM jobs').get().n
-  const saved = db.prepare('SELECT COUNT(*) AS n FROM saved').get().n
+  const saved = db.prepare('SELECT COUNT(*) AS n FROM saved s JOIN jobs j ON j.id=s.job_id WHERE j.merged_into IS NULL').get().n
   const since = new Date(Date.now() - 86400000).toISOString()
   const fresh = db.prepare('SELECT COUNT(*) AS n FROM jobs WHERE first_seen >= ?').get(since).n
   return { total, saved, newLast24h: fresh }
 }
 
-// Listings nobody has re-advertised in a fortnight are almost always filled.
+// Missing from discovery does not prove closure. Preserve records and shortlists;
+// only explicit checks/deadlines close adverts. Old verification becomes unknown.
 export function pruneStale(days = 21) {
   const cutoff = new Date(Date.now() - days * 86400000).toISOString()
-  db.prepare('DELETE FROM job_sources WHERE last_seen < ?').run(cutoff)
-  const r = db.prepare('DELETE FROM jobs WHERE last_seen < ? AND id NOT IN (SELECT job_id FROM saved)').run(cutoff)
-  db.exec('DELETE FROM job_sources WHERE job_id NOT IN (SELECT id FROM jobs)')
+  const r=db.prepare("UPDATE jobs SET verification_status='unverified',verification_reason='Previous verification is stale' WHERE verification_status='open' AND verified_at<?").run(cutoff)
   return Number(r.changes)
 }

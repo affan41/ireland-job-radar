@@ -39,6 +39,7 @@ export function parseTescoJob(html, url, now = Date.now()) {
     employmentType: detectEmploymentType(title, schedule),
     // There is no posted date on this board. first_seen records when we found it.
     postedAt: null,
+    closingAt: closing ? `${closing[3]}-${closing[2]}-${closing[1]}` : null,
   }
 }
 

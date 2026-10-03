@@ -1,3 +1,5 @@
+import {fetchPriorityEmployers} from './sources/priority-employers.js'
+import {verifyStoredJobs} from './verify-jobs.js'
 import { config } from './config.js'
 import { PROFILES } from './profiles.js'
 import { buildJob } from './normalise.js'
@@ -23,7 +25,7 @@ export function refreshState() {
   return { ...progress, log: progress.log.slice(-40) }
 }
 
-export async function runRefresh({ quiet = false } = {}) {
+export async function runRefresh({ quiet = false, requestContext } = {}) {
   if (running) return { skipped: 'a refresh is already running' }
   running = true
 
@@ -42,13 +44,17 @@ export async function runRefresh({ quiet = false } = {}) {
   const collected = []
 
   try {
+    if(config.priorityEmployers?.enabled){
+      note('Direct employer adverts and application destinations')
+      const r=await fetchPriorityEmployers({onProgress:note});collected.push(...r.jobs);errors.push(...r.errors)
+    }
     if (config.careerjet.enabled) {
       note(`Careerjet: searching ${config.countries.join(', ').toUpperCase()}`)
       const r = await fetchCareerjet({
         profiles: PROFILES,
         countries: config.countries,
         maxPages: config.careerjet.maxPages,
-        affid: config.careerjet.affid,
+        apiKey: config.careerjet.apiKey, requestContext,
         onProgress: note,
       })
       collected.push(...r.jobs)
@@ -80,7 +86,7 @@ export async function runRefresh({ quiet = false } = {}) {
         brandCities: ls.brandCities,
         shops: ls.shops,
         shopLocation: ls.shopLocation,
-        affid: config.careerjet.affid,
+        apiKey: config.careerjet.apiKey, requestContext,
         onProgress: note,
       })
       collected.push(...r.jobs)
@@ -184,9 +190,13 @@ export async function runRefresh({ quiet = false } = {}) {
     db.exec('BEGIN')
     try { writeAll(collected); db.exec('COMMIT') } catch (err) { db.exec('ROLLBACK'); throw err }
 
+    if(config.verification?.enabled){
+      const checked=await verifyStoredJobs({limit:config.verification.maxPerRefresh,onProgress:note})
+      note(`Advert verification: ${checked.open} open, ${checked.closed} closed, ${checked.unverified} unverified`)
+    }
     const pruned = pruneStale(config.pruneAfterDays)
     const secs = ((Date.now() - started) / 1000).toFixed(1)
-    const summary = `${added} new, ${refreshed} still live, ${dropped} off-profile, ${pruned} expired, ${secs}s`
+    const summary = `${added} new, ${refreshed} seen again, ${dropped} off-profile, ${pruned} stale checks, ${secs}s`
     note(`Done: ${summary}`)
 
     finishRun(runId, {

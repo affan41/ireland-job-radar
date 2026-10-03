@@ -34,6 +34,11 @@ function filtersFrom(url) {
   const view = VIEW_BY_KEY[p.get('view')] ? p.get('view') : ''
   return {
     view,
+    maxHours: Number(p.get('maxHours')) || 0,
+    availability: p.get('availability') || '',
+    status: p.get('status') || '',
+    scheme: p.get('scheme') || 'ordinary',
+    noConflicts: p.get('noConflicts') === '1',
     includeNearby: p.get('nearby') === '1',
     // A view sets its own geography, including remote work that belongs to no
     // country, so the country switch is left out while one is active.
@@ -97,12 +102,13 @@ const server = createServer(async (req, res) => {
     if (path === '/api/export.csv') {
       const { rows } = queryJobs({ ...filtersFrom(url), limit: 300 })
       const head = ['Title', 'Company', 'Location', 'Country', 'Region', 'Work mode', 'Job type',
-        'Sponsorship signal', 'Why', 'Salary', 'Posted', 'Source', 'Link', 'Distance from Troy Village', 'Distance basis']
+        'Sponsorship signal', 'Evidence', 'Salary', 'Posted', 'Source', 'Link', 'Distance from Troy Village', 'Distance basis', 'Status', 'Closing date', 'Last verified', 'Last checked', 'Verification note', 'Weekly hours min', 'Weekly hours max', 'Required shifts', 'Conflicts', 'Scheme', 'Application destination', 'Sponsorship source']
       const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`
       const csv = [head.join(','), ...rows.map((r) => [
         r.title, r.company, r.location_raw, r.country, r.county_name, r.work_mode, r.employment_type,
         r.sponsorship, r.sponsorship_reasons,
-        r.salary_text, (r.posted_at || r.first_seen || '').slice(0, 10), r.available_sources || r.source, r.url, r.distance.label, r.distance.detail,
+        r.salary_text, (r.posted_at || '').slice(0, 10), r.available_sources || r.source, r.url, r.distance.label, r.distance.detail,
+        r.verification_status,r.closing_at,r.verified_at,r.checked_at,r.verification_reason,r.hours_min,r.hours_max,r.shifts,r.conflicts,r.scheme,r.application_url,r.sponsorship_source,
       ].map(esc).join(','))].join('\n')
       res.writeHead(200, {
         'Content-Type': 'text/csv; charset=utf-8',
@@ -112,7 +118,7 @@ const server = createServer(async (req, res) => {
     }
 
     if (path === '/api/refresh' && req.method === 'POST') {
-      runRefresh().catch((err) => console.error(`refresh failed: ${err.message}`))
+      runRefresh({requestContext:{userIp:req.socket.remoteAddress,userAgent:req.headers['user-agent']||''}}).catch((err) => console.error(`refresh failed: ${err.message}`))
       return json(res, { started: true })
     }
 

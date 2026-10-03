@@ -8,7 +8,7 @@ job boards, folds them into a single deduplicated list, works out which country 
 region each listing is in, reads whether the advert says anything about sponsoring a
 work permit, and scores it against the kinds of role you actually want to see.
 
-No npm install. No build step. No API keys needed to start.
+Run `npm install` once (Cheerio parses public advert HTML). No build step. Direct public employer sources need no API key; Careerjet requires its publisher API key.
 
 ## Running it
 
@@ -60,8 +60,8 @@ over aggregator redirects, and the card shows when another source also carries i
 
 | Source | Key needed | What it gives you |
 | --- | --- | --- |
-| Careerjet | No | The bulk of it, run separately against the Irish, Cypriot and Maltese indexes. Aggregates IrishJobs, Jobs.ie, the recruitment agencies and most employer sites |
-| Local searches | No | Careerjet again, but asked town by town rather than country-wide, for Limerick and everywhere within a commute, plus a set of work-from-home searches. A national sweep sorted by date never reaches more than a handful of Limerick listings; asking for Limerick directly returns several hundred |
+| Careerjet | Publisher API key | The bulk of it, run separately against the Irish, Cypriot and Maltese indexes. Aggregates IrishJobs, Jobs.ie, the recruitment agencies and most employer sites |
+| Local searches | Publisher API key | Careerjet again, but asked town by town rather than country-wide, for Limerick and everywhere within a commute, plus a set of work-from-home searches. A national sweep sorted by date never reaches more than a handful of Limerick listings; asking for Limerick directly returns several hundred |
 | Local employer sites | No | Current adverts linked from The Old Quarter Group careers page, covering the townhouse, pub, Fordes Courtyard and The Top House |
 | JobAlert.ie | No | The paginated Limerick part-time search, with open/expired status and actual employment types checked |
 | Primark, Lidl, McDonald's, Supermac's and Boots | No | Official public vacancy feeds and full adverts, with contract types, hours and available workplace coordinates |
@@ -85,29 +85,10 @@ ADZUNA_APP_ID=xxxx ADZUNA_APP_KEY=yyyy npm start
 
 ## Visa sponsorship
 
-Every listing carries one of four signals, shown as a tag on the card and filterable
-from the sidebar:
-
-| Signal | What it means |
-| --- | --- |
-| **Sponsorship mentioned** | The advert itself says it: visa sponsorship, relocation package, help with a work permit, or it names a permit route such as the Critical Skills Permit, a Single Permit or the Key Employee Initiative |
-| **Likely to sponsor** | The advert is silent, but the employer is one that routinely moves people across borders: Big Four and international practice firms, fund administrators, the Malta iGaming operators, the Limassol brokers, or a multinational read straight off its own careers site |
-| **Says no sponsorship** | The advert rules it out: no sponsorship, EU citizens only, or an existing right to work required |
-| **Not stated** | Nothing either way. Most listings land here |
-
-This is a reading of the advert, not a promise. An employer that has sponsored a
-hundred people can still say no to the hundred and first. Treat "likely" as a
-shortlist worth asking, not an answer.
-
-Under the country tabs there is a line explaining which permit you would actually be
-applying for in that country, with a link to the official guidance.
-
-To re-apply the sponsorship rules and country detection to listings already stored,
-without waiting for a refresh to see them again:
-
-```bash
-cd ~/ireland-job-radar && npm run backfill
-```
+Only explicit offers or refusals in a checked advert count. Employer names,
+multinational status, source websites, relocation packages and references to permit
+eligibility do not establish an offer. Unsubstantiated labels are `Not stated`.
+The card and CSV retain the supporting sentence and source advert URL.
 
 ## The Limerick part time tab
 
@@ -201,7 +182,7 @@ rules apply to all new sources; unknown hours never qualify through a search ter
   Ireland, grouped by province. For Cyprus, the five districts. For Malta, its six
   official regions including Gozo. Each with a live count, and regions with nothing
   in them hidden. Remote and country-wide listings get their own buckets.
-- **Visa sponsorship.** The four signals above.
+- **Visa sponsorship.** The explicit advert signals above.
 - **Category.** The six groups above.
 - **Working pattern.** Hybrid, remote, on site, or not stated. Read out of the
   listing text, so hybrid roles surface even when the board has no field for it.
@@ -229,8 +210,7 @@ writes the current filtered view out to a spreadsheet.
 While `npm start` is running it refreshes every 45 minutes on its own, and the
 **Refresh now** button in the top right forces one.
 
-Listings not seen in any refresh for 30 days are deleted, on the assumption they are
-filled. Shortlisted jobs are never deleted.
+Listings are retained. Explicitly closed adverts and passed closing dates are archived; failed checks and stale verification are unverified. Shortlists, hidden choices and duplicate history are preserved.
 
 To have it collect in the background whether or not the server is up, add a cron
 entry:
@@ -256,7 +236,7 @@ The settings worth knowing:
 - `officialEmployers` controls the direct Apple, Amazon, Microsoft, KPMG, Deloitte,
   PwC and EY collectors.
   Each company can be disabled independently in `config.json`.
-- `pruneAfterDays` how long a listing survives without being seen again.
+- `pruneAfterDays` when old verification records are marked unverified. Listings and shortlists are retained; a missing search result does not prove closure.
 - `employers.companies` the careers boards to follow. To add one, find the company on
   Greenhouse, Ashby, Workable or Lever and take the slug out of the board URL.
 
@@ -297,7 +277,7 @@ Restart and refresh.
 ## Known limits
 
 - IrishJobs.ie and Jobs.ie block direct scraping, so they arrive through Careerjet
-  rather than first hand. In practice the coverage is much the same.
+  only when the publisher API is configured. Coverage is not guaranteed.
 - publicjobs.ie has no public feed. Public sector roles show up when they are
   advertised elsewhere too, but for civil service competitions specifically, set up
   an alert on publicjobs.ie directly.
@@ -306,11 +286,11 @@ Restart and refresh.
 
 ### Distance from Troy Village and nearby towns
 
-Each job card shows an approximate straight-line distance from Troy Village,
+Where the workplace is precise enough, a job card shows a straight-line distance from Troy Village,
 Castletroy (52.66382, -8.57677), with a link to check the actual route. An
-advertised workplace pin is used when available. Otherwise a known town or
-shopping-centre reference point is used and labelled as an area estimate.
-County-only, ambiguous and unsupported locations show "Distance unavailable";
+advertised workplace pin is used when available. Otherwise a known shopping-centre
+reference point is used only when that centre is named in the workplace address.
+City-only, county-only, ambiguous and unsupported locations show "Exact workplace unknown";
 remote work shows "No regular commute stated". No journey time is inferred.
 The estimate and its basis are included in CSV exports.
 
@@ -334,3 +314,44 @@ collectors. Public search configuration is read from the employer pages; no
 personal login credentials are required. Dunnes has a human-verification step
 and Aldi restricts automated access, so both remain covered by the existing
 brand searches rather than an unreliable direct collector.
+
+
+## Advert checks and direct employer priority
+
+Sodexo Ireland, Sally Europe and SBFM are collected from their public careers
+pages/sitemaps, alongside Old Quarter, JobsIreland and JobAlert. The new public-page
+reader respects robots rules, reports denied/failed access and never bypasses a login
+or CAPTCHA. Search results and snippets are discovery evidence, not proof of an open
+vacancy. Indeed and UL MYCareerPath are manual shortcuts; UL requires the student's
+login. No applications are submitted.
+
+An advert becomes `Verified open` only after its detail page and application
+entry point have been checked. Login entry points must retain the same vacancy ID.
+A generic registration redirect, missing advert, access restriction or failed check
+stays `Unverified`. HTTP 404/410, explicit closure and expired deadlines close a job.
+Verification ages out after seven days. Posting date, closing date, first seen,
+last checked and last successfully verified are separate fields. The default view
+includes open and unverified records; use the status filter to see verified jobs or
+archived records. Each refresh checks up to `verification.maxPerRefresh` older records,
+prioritising malformed titles and local part-time jobs, in addition to direct-source
+checks. It does not claim the whole historic database has been reverified.
+
+Hours/availability filters use extracted advert evidence. Unknown hours are excluded
+when a maximum is chosen. Availability filters exclude incompatible or variable
+stated shift categories; a match is not a guarantee of timetable compatibility.
+Conflicting title, metadata and description values remain visible. CE/WPEP schemes
+have a separate filter and are excluded from ordinary vacancies.
+
+Identity aliases use employer IDs and vacancy/application URLs, preserving meaningful
+query/hash IDs. Genuine duplicates retain source provenance, shortlist notes, hidden
+choices and their original records. `node scripts/repair-evidence.js` previews the
+local repair; `--apply` performs it, and `--verify` additionally checks priority
+adverts. Back up the SQLite database before applying bulk repairs.
+
+Careerjet uses only its [documented publisher API](https://www.careerjet.com/partners/api).
+Set `CAREERJET_API_KEY` or `careerjet.apiKey`. Manual refresh passes the actual client
+IP and user agent; scheduled collection skips Careerjet because it has no triggering
+client. Existing Careerjet attribution/tracking links remain intact, and the UI offers
+an attributed Careerjet search shortcut. Publisher access terms must cover your use;
+no legacy public endpoint or invented IP is used. Without a key, employer sources and
+other configured public feeds still work.

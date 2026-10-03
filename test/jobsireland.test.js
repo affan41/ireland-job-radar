@@ -16,5 +16,5 @@ test('maps a JobsIreland part-time vacancy to the radar format', () => {
   assert.equal(job.source, 'jobsireland')
   assert.equal(job.sourceDetail, 'Department of Social Protection')
   assert.equal(job.employmentType, 'part_time')
-  assert.equal(job.url, 'https://api.jobsireland.ie/#id=2461152')
+  assert.equal(job.url, 'https://employer.jobsireland.ie/Reports/GetJobsDetail?id=2461152')
 })

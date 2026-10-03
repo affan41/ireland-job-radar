@@ -1,10 +1,9 @@
-// Careerjet's public search API. This is the workhorse: it aggregates IrishJobs,
-// Jobs.ie, the recruitment agencies and most employer sites, and it needs no key.
-// It does insist on a Referer header, and pagesize silently caps at 99.
+// Documented Careerjet publisher API. Requires a publisher key and actual
+// user request context; scheduled calls without that context are skipped.
 
-import { getJSON, sleep } from './http.js'
+import { sleep } from './http.js'
+import {careerjetAccessIssue,careerjetQuery} from './careerjet-api.js'
 
-const ENDPOINT = 'http://public.api.careerjet.net/search'
 const PAGE_SIZE = 99
 
 // Careerjet runs a separate index per country, each with its own locale code.
@@ -20,11 +19,13 @@ export async function fetchCareerjet({
   maxPages = 12,
   delayMs = 120,
   concurrency = 5,
-  affid,
+  apiKey, requestContext,
   onProgress,
 }) {
   const out = []
   const errors = []
+  const accessIssue=careerjetAccessIssue({apiKey,requestContext})
+  if(accessIssue){onProgress?.(accessIssue);return {jobs:[],errors:[accessIssue],skipped:accessIssue}}
 
   const markets = CAREERJET_COUNTRIES.filter((c) => countries.includes(c.code))
   const queries = markets.flatMap((market) =>
@@ -40,24 +41,22 @@ export async function fetchCareerjet({
     while (cursor < queries.length) {
       const { q, market } = queries[cursor++]
 
-      for (let page = 1; page <= maxPages; page++) {
+      for (let page = 1; page <= Math.min(maxPages,10); page++) {
         const params = new URLSearchParams({
           keywords: q,
           location: market.location,
           locale_code: market.locale,
-          pagesize: String(PAGE_SIZE),
+          page_size: String(PAGE_SIZE), fragment_size: '1000',
           page: String(page),
           sort: 'date',
           // Careerjet wants to know who the end user is; these are the values it
           // expects a server-side integration to pass through.
-          user_ip: '87.44.1.1',
-          user_agent: 'Mozilla/5.0',
+
         })
-        if (affid) params.set('affid', affid)
 
         let data
         try {
-          data = await getJSON(`${ENDPOINT}?${params}`, { headers: { Referer: 'http://localhost/job-radar' } })
+          data = await careerjetQuery(params,{apiKey,requestContext})
         } catch (err) {
           errors.push(`careerjet ${market.location} "${q}" p${page}: ${err.message}`)
           break

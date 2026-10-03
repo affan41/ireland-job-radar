@@ -10,12 +10,12 @@ import { assessSponsorship } from '../src/sponsorship.js'
 import { SENIOR_TITLE } from '../src/normalise.js'
 import { classify } from '../src/profiles.js'
 
-const rows = db.prepare('SELECT id, title, company, description, location_raw, source, groups, profiles, score, work_mode FROM jobs').all()
+const rows = db.prepare('SELECT id, title, company, description, location_raw, source, groups, profiles, score, work_mode, verification_status, full_description, url FROM jobs').all()
 
 const update = db.prepare(`
   UPDATE jobs SET
     region_key = ?, county_name = ?, province = ?, country = ?,
-    sponsorship = ?, sponsorship_reasons = ?
+    sponsorship = ?, sponsorship_reasons = ?, sponsorship_evidence = ?, sponsorship_source = ?
   WHERE id = ?
 `)
 
@@ -42,7 +42,8 @@ try {
 
     const s = assessSponsorship({
       title: r.title,
-      description: r.description,
+      description: r.verification_status === 'open' ? (r.full_description || r.description) : '',
+      url: r.url,
       company: r.company,
       source: r.source,
       country: region.country ?? null,
@@ -55,6 +56,7 @@ try {
       region.country ?? null,
       s.level,
       s.reasons.join(' · ') || null,
+      s.evidence || null, s.source || null,
       r.id,
     )
 

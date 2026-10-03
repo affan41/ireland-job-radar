@@ -412,3 +412,5 @@ a { color: inherit; }
   .distance-value { font-size: 18px; }
   .job-distance a { margin: 0 0 0 auto; }
 }
+
+.evidence-warning { color: #804310; background: #fff4e2; padding: 9px; border-radius: 6px; font-size: 13px; }

@@ -14,6 +14,7 @@ const state = {
   days: '14',
   minScore: '10',
   salaryMin: '0',
+  maxHours: '0', availability: '', status: '', scheme: 'ordinary', noConflicts: false,
   savedOnly: false,
   sort: 'newest',
   page: 0,
@@ -36,7 +37,8 @@ function loadState() {
   try {
     const raw = JSON.parse(localStorage.getItem(STORE_KEY) || '{}')
     for (const k of ['sponsorship', 'regions', 'groups', 'modes', 'types', 'sources']) if (Array.isArray(raw[k])) state[k] = new Set(raw[k])
-    for (const k of ['q', 'days', 'minScore', 'salaryMin', 'sort', 'country', 'view']) if (raw[k] != null) state[k] = raw[k]
+    for (const k of ['q', 'days', 'minScore', 'salaryMin', 'sort', 'country', 'view', 'maxHours', 'availability', 'status', 'scheme']) if (raw[k] != null) state[k] = raw[k]
+    if (typeof raw.noConflicts === 'boolean') state.noConflicts = raw.noConflicts
     if (typeof raw.savedOnly === 'boolean') state.savedOnly = raw.savedOnly
     if (typeof raw.includeNearby === 'boolean') state.includeNearby = raw.includeNearby
     // Existing users had a narrower seven-day default. Widen it once without
@@ -62,6 +64,8 @@ function params(extra = {}) {
   if (state.days !== '0') p.set('days', state.days)
   if (state.minScore !== '0') p.set('minScore', state.minScore)
   if (state.salaryMin !== '0') p.set('salaryMin', state.salaryMin)
+  for(const k of ['maxHours','availability','status','scheme']) if(state[k]) p.set(k,state[k])
+  if(state.noConflicts)p.set('noConflicts','1')
   if (state.savedOnly) p.set('saved', '1')
   p.set('sort', state.sort)
   p.set('limit', String(state.limit))
@@ -164,8 +168,8 @@ function renderRegions() {
 const MODE_LABELS = { hybrid: 'Hybrid', remote: 'Remote', onsite: 'On site', unspecified: 'Not stated' }
 const TYPE_LABELS = { part_time: 'Part-time', full_time: 'Full-time', temporary: 'Temporary / seasonal', contract: 'Contract', unspecified: 'Not stated' }
 const SPONSOR_LABELS = {
-  explicit: 'Sponsorship mentioned',
-  likely: 'Likely to sponsor',
+  explicit: 'Sponsorship offered',
+  likely: 'Not stated',
   unlikely: 'No sponsorship',
 }
 const SOURCE_LABELS = {
@@ -318,12 +322,16 @@ function jobCard(j) {
 
   const el = document.createElement('article')
   el.className = `job${j.is_saved ? ' is-saved' : ''}`
+  const parseList = s => {try{return JSON.parse(s||'[]')}catch{return []}}
+  const conflicts=parseList(j.conflicts), shifts=parseList(j.shifts)
+  const dateLabel = value => value ? new Date(value).toLocaleDateString('en-IE') : 'Not stated'
+  const statusLabel = {open:'Verified open',closed:'Closed / archived',unverified:'Unverified'}[j.verification_status] || 'Unverified'
   const distance = j.distance || { label: 'Distance unavailable', detail: 'A specific workplace location is needed', kind: 'unknown' }
   el.innerHTML = `
     <div class="job-distance ${esc(distance.kind)}" title="${esc(distance.detail)}">
       <span class="distance-value">${esc(distance.label)}</span>
       <span>${distance.kind === 'remote' ? 'No regular commute stated' : 'from Troy Village'}</span>
-      <span class="distance-basis">${distance.kind === 'area' ? `${esc(distance.place)} area estimate` : distance.kind === 'workplace' ? 'Straight-line estimate' : distance.kind === 'unknown' ? 'Location needs checking' : ''}</span>
+      <span class="distance-basis">${distance.kind === 'area' ? `${esc(distance.place)} area estimate` : distance.kind === 'workplace' ? 'Straight-line estimate' : distance.kind === 'unknown' ? 'Exact workplace unknown' : ''}</span>
       ${distance.routeUrl ? `<a href="${esc(distance.routeUrl)}" target="_blank" rel="noopener noreferrer">Check route</a>` : ''}
     </div>
     <div class="job-content">
@@ -340,14 +348,22 @@ function jobCard(j) {
       ${sponsor}
       ${mode}
       ${jobType}
+      <span class="tag" title="${esc(j.verification_reason)}">${statusLabel}</span>
+      ${j.scheme!=='ordinary' ? `<span class="tag">${esc((j.scheme||'').toUpperCase())} scheme</span>` : ''}
       ${salary}
       ${isNew ? '<span class="tag new">New</span>' : ''}
     </div>
+    <p class="student-checks">Weekly hours: ${j.hours_max == null ? 'Not stated' : `${j.hours_min===j.hours_max?j.hours_max:`${j.hours_min}–${j.hours_max}`}`}. Closing: ${dateLabel(j.closing_at)}. Last verified: ${j.verified_at ? dateLabel(j.verified_at) : 'Never'}.</p>
+    ${j.title_repair_note?`<p class="student-checks">${esc(j.title_repair_note)} · Original reference: ${esc(j.original_title)}</p>`:''}
+    ${j.verification_status==='unverified'?`<p class="student-checks">${esc(j.verification_reason||'Live advert not checked')}${j.checked_at?` · Last attempted ${dateLabel(j.checked_at)}`:''}</p>`:''}
+    ${conflicts.length?`<p class="evidence-warning">Check conflicting information: ${esc(conflicts.join(' '))}</p>`:''}
+    ${shifts.length?`<details class="student-checks"><summary>Required shifts and availability</summary>${shifts.map(s=>`<p>${esc(s)}</p>`).join('')}</details>`:''}
+    ${j.sponsorship_evidence?`<details class="student-checks"><summary>Sponsorship evidence</summary><p>${esc(j.sponsorship_evidence)}</p><a href="${esc(j.sponsorship_source||j.url)}" target="_blank" rel="noopener">Source advert</a></details>`:''}
     ${j.description ? `<p class="job-snippet">${esc(j.description)}</p>` : ''}
     ${j.remote_student_note ? `<p class="student-checks">Before applying: ${esc(j.remote_student_note)}</p>` : ''}
     <div class="job-foot">
       <span>${esc(j.location_raw || '')}</span>
-      ${posted ? `<span class="sep">·</span><span>${timeAgo(posted)}</span>` : ''}
+      ${posted ? `<span class="sep">·</span><span>${j.posted_at ? 'Posted' : 'First found'} ${timeAgo(posted)}</span>` : ''}
       <span class="sep">·</span><span>${esc(sourceText)}</span>
     </div></div>`
 
@@ -382,10 +398,12 @@ const countFor = (qs) =>
 // An empty list is nearly always one filter doing the damage rather than an empty
 // database. Work out which one, say so plainly, and offer to undo it.
 async function renderEmptyState(host) {
+  const requested = params().toString()
   const [ignoringDate, ignoringEverything] = await Promise.all([
     countFor(params({ days: 0 })),
     countFor(`${state.country ? `countries=${state.country}&` : ''}days=0&minScore=0`),
   ])
+  if (requested !== params().toString()) return
 
   if (ignoringEverything === 0) {
     host.innerHTML = `<div class="empty-state">
@@ -422,14 +440,17 @@ async function renderEmptyState(host) {
 }
 
 async function loadJobs() {
-  const res = await fetch(`/api/jobs?${params()}`)
+  const requested = params().toString()
+  const res = await fetch(`/api/jobs?${requested}`)
   const { total, rows, limit, offset } = await res.json()
+  if (requested !== params().toString()) return
 
   const host = $('#results')
   host.innerHTML = ''
 
   if (!rows.length) {
     await renderEmptyState(host)
+    if (requested !== params().toString()) return
     $('#count').textContent = 'No results'
     $('#pager').innerHTML = ''
     return
@@ -457,8 +478,11 @@ async function loadJobs() {
 }
 
 async function loadMeta() {
-  const res = await fetch(`/api/meta?${params()}`)
-  meta = await res.json()
+  const requested = params().toString()
+  const res = await fetch(`/api/meta?${requested}`)
+  const nextMeta = await res.json()
+  if (requested !== params().toString()) return
+  meta = nextMeta
   renderFilters()
 
   const s = meta.stats
@@ -466,7 +490,7 @@ async function loadMeta() {
   const here = meta.facets.byCountry?.[state.country] || 0
   const country = meta.countries.find((c) => c.code === state.country)?.name || ''
   $('#tagline').textContent =
-    `${here.toLocaleString('en-IE')} in ${country} of ${s.total.toLocaleString('en-IE')} live listings` +
+    `${here.toLocaleString('en-IE')} in ${country} of ${s.total.toLocaleString('en-IE')} stored listings` +
     ` · ${s.newLast24h} found today · ${s.saved} shortlisted` +
     (when ? ` · updated ${timeAgo(when)}` : '')
 }
@@ -514,6 +538,8 @@ function bind() {
     $(`#${id}`).addEventListener('change', (e) => { state[id] = e.target.value; state.page = 0; refreshAll() })
   }
 
+  for(const k of ['maxHours','availability','status','scheme']) $('#'+k).addEventListener('change', e=>{state[k]=e.target.value;state.page=0;refreshAll()})
+  $('#noConflicts').addEventListener('change',e=>{state.noConflicts=e.target.checked;state.page=0;refreshAll()})
   $('#savedOnly').addEventListener('change', (e) => { state.savedOnly = e.target.checked; state.page = 0; refreshAll() })
   $('#includeNearby').addEventListener('change', (e) => { state.includeNearby = e.target.checked; state.regions.clear(); state.page = 0; refreshAll() })
 
@@ -526,6 +552,7 @@ function bind() {
     state.sources.clear(); state.sponsorship.clear()
     state.q = ''; state.days = '14'; state.minScore = '10'; state.salaryMin = '0'; state.savedOnly = false; state.page = 0
     state.includeNearby = true
+    state.maxHours='0';state.availability='';state.status='';state.scheme='ordinary';state.noConflicts=false
     syncControls()
     refreshAll()
   })
@@ -540,6 +567,8 @@ function bind() {
 }
 
 function syncControls() {
+  for(const k of ['maxHours','availability','status','scheme']) $('#'+k).value=state[k]
+  $('#noConflicts').checked=state.noConflicts
   $('#q').value = state.q
   $('#days').value = state.days
   $('#minScore').value = state.minScore

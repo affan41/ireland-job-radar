@@ -12,5 +12,8 @@
     "refresh": "node --no-warnings scripts/refresh-once.js",
     "test": "node --test",
     "backfill": "node --no-warnings scripts/backfill.js"
+  },
+  "dependencies": {
+    "cheerio": "^1.2.0"
   }
 }

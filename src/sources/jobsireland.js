@@ -27,11 +27,13 @@ export function mapJobsIrelandJob(j, employmentType) {
   return {
     source: 'jobsireland',
     sourceDetail: 'Department of Social Protection',
+    employerJobId: String(id),
+    closingAt: j.ClosingDate || j.EndDate || null,
     title: j.JobTitle,
     company: j.EmployerName,
     locationRaw: j.Location,
     url: Number.isFinite(id) && id > 0
-      ? `https://api.jobsireland.ie/#id=${id}`
+      ? `https://employer.jobsireland.ie/Reports/GetJobsDetail?id=${id}`
       : 'https://api.jobsireland.ie/#browse-jobs/0',
     description: j.Description,
     postedAt: j.StartDate,

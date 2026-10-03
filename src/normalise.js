@@ -3,6 +3,7 @@ import { resolveRegion, detectWorkMode, countryFallback } from './regions.js'
 import { classify, PROFILE_BY_ID } from './profiles.js'
 import { detectEmploymentType } from './employment.js'
 import { assessSponsorship } from './sponsorship.js'
+import {scheduleEvidence, schemeType, employerJobKey} from './job-evidence.js'
 import { assessRemoteStudent } from './remote-student.js'
 
 const ENTITIES = {
@@ -31,8 +32,8 @@ const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').tr
 // Titles that mean a career role rather than something you fit around lectures.
 export const SENIOR_TITLE = /\b(senior|lead|principal|head of|director|manager|management|consultant|engineer|developer|architect|analyst|scientist|accountant|solicitor|pharmacist|physiotherapist|nurse|doctor|surveyor|planner|controller|auditor|specialist)\b/i
 
-// Same role posted by the same employer in the same place is one job, no matter
-// how many boards it came through.
+// Legacy fallback identity. The database resolves employer IDs and advert/application
+// URLs first, and keeps distinct identified vacancies even when this hash matches.
 export function jobId(title, company, locationRaw) {
   return createHash('sha1')
     .update(`${norm(title)}|${norm(company)}|${norm(locationRaw).slice(0, 24)}`)
@@ -125,7 +126,11 @@ export function buildJob(raw, seenAt) {
   if (!title || !raw.url) return null
 
   const company = clean(raw.company, 120) || null
+  const fullDescription = String(raw.description || '').replace(/<\/(?:p|li|div)>|<br\s*\/?>/gi, '\n')
+    .split(/\r?\n/).map(line => clean(line, Infinity)).filter(Boolean).join('\n')
   const description = clean(raw.description, 900)
+  const schedule = scheduleEvidence(title, fullDescription, raw.metadata || raw.employmentType)
+  const titleNeedsReview = !/[\p{L}]/u.test(title)
   const employmentType = detectEmploymentType(title, clean(raw.description, Infinity), raw.employmentType)
   const locationRaw = clean(raw.locationRaw, 140)
 
@@ -150,7 +155,8 @@ export function buildJob(raw, seenAt) {
   }
   const salary = parseSalary(raw.salaryText, raw)
   const country = region.country ?? raw.country ?? null
-  const sponsorship = assessSponsorship({ title, description, company, source: raw.source, country })
+  const advertChecked = raw.verificationStatus && raw.verificationStatus !== 'unverified'
+  const sponsorship = assessSponsorship({ title: advertChecked ? title : '', description: advertChecked ? fullDescription : '', url: raw.url })
   const workMode = raw.workMode || detectWorkMode(title, description, locationRaw)
   const remoteStudentNote = assessRemoteStudent({ title, description: clean(raw.description, Infinity), locationRaw,
     workMode, employmentType, statedEmploymentType: raw.employmentType, careerRole: SENIOR_TITLE.test(title) })
@@ -180,6 +186,21 @@ export function buildJob(raw, seenAt) {
     postedAt: toDateISO(raw.postedAt),
     workMode,
     remoteStudentNote,
+    fullDescription,
+    titleNeedsReview,
+    hoursMin: schedule.hoursMin, hoursMax: schedule.hoursMax,
+    hoursEvidence: schedule.hoursEvidence, shifts: schedule.shifts,
+    availability: schedule.availability, conflicts: schedule.conflicts,
+    scheme: schemeType(title, fullDescription),
+    closingAt: raw.closingAt || null,
+    checkedAt: raw.checkedAt || null, verifiedAt: raw.verifiedAt || null,
+    verificationStatus: raw.verificationStatus || 'unverified',
+    verificationReason: raw.verificationReason || 'Discovery only; advert not checked',
+    applicationUrl: raw.applicationUrl || null,
+    employerJobId: raw.employerJobId || employerJobKey(raw.url),
+    locationPrecision: raw.locationPrecision || null,
+    sponsorshipEvidence: sponsorship.evidence || null,
+    sponsorshipSource: sponsorship.source || null,
     employmentType,
     // Whether the title reads as a career position rather than casual work.
     careerRole: SENIOR_TITLE.test(title) ? 1 : 0,

@@ -36,7 +36,7 @@
         <button class="link" data-clear="sponsorship">Clear</button>
       </div>
       <div id="sponsorship" class="checklist"></div>
-      <p class="panel-note">Read from what each advert says, plus the employer's track record. A signal, not a promise.</p>
+      <p class="panel-note">Only explicit advert statements are shown. No employer-based guesses.</p>
     </section>
 
     <section class="panel">
@@ -68,6 +68,15 @@
       <div id="types" class="checklist"></div>
     </section>
 
+    <section class="panel">
+      <div class="panel-head"><h2>Hours, availability and checks</h2></div>
+      <label class="field-row"><span>Maximum weekly hours</span><select id="maxHours"><option value="0">Any / unknown</option><option value="10">10 hours</option><option value="15">15 hours</option><option value="20">20 hours</option><option value="25">25 hours</option><option value="30">30 hours</option></select></label>
+      <label class="field-row"><span>Availability</span><select id="availability"><option value="">Any / unknown</option><option value="weekends">Weekends only</option><option value="evenings">Evenings only</option><option value="weekdays">Weekdays only</option></select></label>
+      <p class="hint">Hours filters exclude unknown hours. Availability uses stated shifts and excludes conflicting or variable patterns. Check the full timetable with the employer.</p>
+      <label class="field-row"><span>Advert status</span><select id="status"><option value="">Open + unverified</option><option value="open">Verified open (last 7 days)</option><option value="unverified">Unverified</option><option value="closed">Archived / closed</option></select></label>
+      <label class="field-row"><span>Vacancy type</span><select id="scheme"><option value="ordinary">Ordinary vacancies</option><option value="schemes">CE / WPEP schemes</option></select></label>
+      <label class="toggle"><input type="checkbox" id="noConflicts"><span>Exclude conflicting hours / contracts</span></label>
+    </section>
     <section class="panel">
       <div class="panel-head"><h2>Refine</h2></div>
 
@@ -120,10 +129,11 @@
   </aside>
 
   <main class="main">
+    <p class="distance-note">Search directly: <a href="https://limerick-csm.symplicity.com/" target="_blank" rel="noopener">UL MYCareerPath (UL login required)</a> · <a href="https://www.careerjet.ie/search/jobs?s=part+time&amp;l=Limerick" target="_blank" rel="noopener">Careerjet</a> · <a href="https://ie.indeed.com/jobs?q=part+time&amp;l=Limerick" target="_blank" rel="noopener">Indeed (manual search)</a></p>
     <div id="nearbyOptions" class="nearby-options" hidden>
       <label class="toggle"><input type="checkbox" id="includeNearby"><span>Include nearby towns: Shannon, Ennis and Nenagh</span></label>
     </div>
-    <p class="distance-note">Distances from Troy Village are approximate straight-line distances. Area estimates use the named town or shopping centre; routes can be longer. <a href="https://www.geonames.org/" target="_blank" rel="noopener">GeoNames</a> · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a></p>
+    <p class="distance-note">Distances from Troy Village are shown only for a precise workplace point or named shopping centre. City-only locations show “Exact workplace unknown”. Routes can be longer than the straight-line estimate. <a href="https://www.geonames.org/" target="_blank" rel="noopener">GeoNames</a> · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a></p>
     <div class="resultbar">
       <div id="count" class="count">Loading</div>
       <div class="resultbar-right">
