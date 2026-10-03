@@ -40,9 +40,8 @@ function filtersFrom(url) {
     scheme: p.get('scheme') || 'ordinary',
     noConflicts: p.get('noConflicts') === '1',
     includeNearby: p.get('nearby') === '1',
-    // A view sets its own geography, including remote work that belongs to no
-    // country, so the country switch is left out while one is active.
-    countries: view ? [] : list(p.get('countries')),
+    // Ireland and eligible remote listings remain available in every view.
+    countries: ['ie'],
     sponsorship: list(p.get('sponsorship')),
     regions: list(p.get('regions')),
     provinces: list(p.get('provinces')),
@@ -78,12 +77,12 @@ const server = createServer(async (req, res) => {
     if (path === '/api/meta') {
       const f = filtersFrom(url)
       return json(res, {
-        regions: allRegions(),
-        provinceOrder: PROVINCE_ORDER,
-        countries: COUNTRIES.map((c) => ({ code: c.code, name: c.name, provinces: c.provinces })),
+        regions: allRegions().filter(r => !r.country || r.country === 'ie'),
+        provinceOrder: PROVINCE_ORDER.filter(p => !['Cyprus','Malta'].includes(p)),
+        countries: COUNTRIES.filter(c => c.code === 'ie').map((c) => ({ code: c.code, name: c.name, provinces: c.provinces })),
         views: VIEWS.map((v) => ({ key: v.key, name: v.name, country: v.country, note: v.note, noteLink: v.noteLink })),
         sponsorshipLevels: SPONSORSHIP_LEVELS,
-        permitNotes: PERMIT_NOTES,
+        permitNotes: {ie: PERMIT_NOTES.ie},
         groups: GROUPS,
         profiles: PROFILES.map((p) => ({ id: p.id, name: p.name, group: p.group })),
         facets: facets(f),

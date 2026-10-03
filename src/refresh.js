@@ -181,7 +181,7 @@ export async function runRefresh({ quiet = false, requestContext } = {}) {
       for (const raw of rows) {
         const job = buildJob(raw, seenAt)
         // No profile matched at all means it is not a job you asked to see.
-        if (!job || job.score === 0) { dropped++; continue }
+        if (!job || job.score === 0 || ['cy','mt'].includes(job.country)) { dropped++; continue }
         if (upsertJob(job)) added++
         else refreshed++
       }

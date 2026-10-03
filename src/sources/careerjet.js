@@ -6,11 +6,9 @@ import {careerjetAccessIssue,careerjetQuery} from './careerjet-api.js'
 
 const PAGE_SIZE = 99
 
-// Careerjet runs a separate index per country, each with its own locale code.
+// Search only the Irish index.
 export const CAREERJET_COUNTRIES = [
   { code: 'ie', location: 'Ireland', locale: 'en_IE' },
-  { code: 'cy', location: 'Cyprus', locale: 'en_CY' },
-  { code: 'mt', location: 'Malta', locale: 'en_MT' },
 ]
 
 export async function fetchCareerjet({
@@ -31,7 +29,7 @@ export async function fetchCareerjet({
   const queries = markets.flatMap((market) =>
     profiles.flatMap((p) => p.queries.map((q) => ({ q, profile: p.id, market }))))
 
-  // Over a hundred searches against three indexes is thousands of requests, so run
+  // Many role searches can generate thousands of requests, so run
   // a handful at a time rather than one after another. Each worker still pauses
   // between its own calls, which keeps the rate on the API reasonable.
   let cursor = 0
@@ -69,8 +67,7 @@ export async function fetchCareerjet({
             source: 'careerjet',
             sourceDetail: j.site || null,
             country: market.code,
-            // Cyprus and Malta boards often give a bare town, so name the country
-            // for anything the gazetteer would otherwise file as unclassified.
+            // Preserve the market for otherwise unclassified locations.
             regionHint: market.location,
             title: j.title,
             company: j.company,

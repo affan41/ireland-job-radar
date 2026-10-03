@@ -170,9 +170,8 @@ export const PROVINCE_ORDER = [
   'Cyprus', 'Malta', 'Anywhere',
 ]
 
-// The countries the radar searches. Ireland is home turf; Cyprus and Malta are the
-// two other English-speaking EU markets that routinely hire third-country nationals
-// into finance and professional services.
+// Recognised countries, including former markets so their stored or incoming
+// listings can be identified and excluded from the Ireland-only portal.
 export const COUNTRIES = [
   { code: 'ie', name: 'Ireland', match: /\b(ireland|ire|eire|éire|roi|irish)\b/i, provinces: ['Leinster', 'Munster', 'Connacht', 'Ulster (ROI)', 'Northern Ireland'] },
   { code: 'cy', name: 'Cyprus', match: /\b(cyprus|cypriot|kypros|κύπρος)\b/i, provinces: ['Cyprus'] },

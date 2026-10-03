@@ -2,7 +2,7 @@
   "name": "ireland-job-radar",
   "version": "1.0.0",
   "private": true,
-  "description": "One portal for jobs across Ireland, Cyprus and Malta, filterable by country, region and visa sponsorship signal.",
+  "description": "Ireland job search with local and remote part-time views, hours filters and advert verification.",
   "type": "module",
   "engines": {
     "node": ">=22.5"

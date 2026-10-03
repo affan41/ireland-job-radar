@@ -45,6 +45,10 @@ function loadState() {
     // disturbing their chosen regions, categories or shortlist preference.
     if ((raw._version || 1) < FILTER_VERSION && raw.days === '7') state.days = '14'
   } catch {}
+  if (state.country !== 'ie') {
+    state.country = 'ie'
+    state.regions.clear()
+  }
 }
 
 function params(extra = {}) {
@@ -183,7 +187,7 @@ const SOURCE_LABELS = {
   remote: 'Remote boards',
 }
 
-const FLAGS = { ie: '\u{1F1EE}\u{1F1EA}', cy: '\u{1F1E8}\u{1F1FE}', mt: '\u{1F1F2}\u{1F1F9}' }
+const FLAGS = { ie: '\u{1F1EE}\u{1F1EA}' }
 
 function renderCountries() {
   const counts = meta.facets.byCountry || {}

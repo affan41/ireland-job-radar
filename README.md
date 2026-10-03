@@ -1,7 +1,7 @@
 # Job Radar
 
-One portal for jobs across Ireland, Cyprus and Malta, filterable by country, region
-and visa sponsorship, refreshed on a timer.
+One portal for jobs across Ireland, filterable by region and visa sponsorship,
+with remote part-time and Limerick views, refreshed on a timer.
 
 Pulls from the aggregators, from employers' own careers boards, and from the remote
 job boards, folds them into a single deduplicated list, works out which country and
@@ -18,9 +18,8 @@ cd ~/ireland-job-radar && npm start
 
 Then open http://localhost:8099
 
-The tabs across the top switch between Ireland, Cyprus and Malta, each with its own
-region list and counts, followed by **Limerick part time**, a saved view for study
-work rather than a country.
+The tabs across the top show Ireland, Remote part time and Limerick part time.
+Collection and displayed results are limited to Ireland and eligible remote work.
 
 The first launch finds an empty database and runs an initial collection, which takes
 two or three minutes. After that it refreshes itself every 45 minutes while the
@@ -60,7 +59,7 @@ over aggregator redirects, and the card shows when another source also carries i
 
 | Source | Key needed | What it gives you |
 | --- | --- | --- |
-| Careerjet | Publisher API key | The bulk of it, run separately against the Irish, Cypriot and Maltese indexes. Aggregates IrishJobs, Jobs.ie, the recruitment agencies and most employer sites |
+| Careerjet | Publisher API key | Searches the Irish index. Aggregates IrishJobs, Jobs.ie, recruitment agencies and employer sites |
 | Local searches | Publisher API key | Careerjet again, but asked town by town rather than country-wide, for Limerick and everywhere within a commute, plus a set of work-from-home searches. A national sweep sorted by date never reaches more than a handful of Limerick listings; asking for Limerick directly returns several hundred |
 | Local employer sites | No | Current adverts linked from The Old Quarter Group careers page, covering the townhouse, pub, Fordes Courtyard and The Top House |
 | JobAlert.ie | No | The paginated Limerick part-time search, with open/expired status and actual employment types checked |
@@ -177,10 +176,9 @@ rules apply to all new sources; unknown hours never qualify through a search ter
 
 ## Filters
 
-- **Country.** Ireland, Cyprus or Malta, as tabs across the top.
-- **Region.** For Ireland, all 26 counties of the Republic plus the six in Northern
-  Ireland, grouped by province. For Cyprus, the five districts. For Malta, its six
-  official regions including Gozo. Each with a live count, and regions with nothing
+- **Views.** Ireland, Remote part time and Limerick part time.
+- **Region.** All 26 counties of the Republic plus the six in Northern
+  Ireland, grouped by province. Each with a live count, and regions with nothing
   in them hidden. Remote and country-wide listings get their own buckets.
 - **Visa sponsorship.** The explicit advert signals above.
 - **Category.** The six groups above.

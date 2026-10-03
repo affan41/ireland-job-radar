@@ -11,9 +11,7 @@ const FILE = join(ROOT, 'config.json')
 const defaults = {
   port: 8099,
   refreshMinutes: 45,
-  // Which countries to collect. Ireland is home; Cyprus and Malta are the other
-  // two English-speaking EU markets that hire third-country nationals into finance.
-  countries: ['ie', 'cy', 'mt'],
+  countries: ['ie'],
   refreshOnStart: true,
   pruneAfterDays: 30,
   careerjet: { enabled: true, maxPages: 10, apiKey: null },
@@ -68,6 +66,8 @@ if (existsSync(FILE)) {
 }
 
 export const config = deepMerge(defaults, fileConfig)
+// This portal is Ireland-only, including when loading an older local config.
+config.countries = ['ie']
 
 // Environment variables win, so you can keep keys out of the config file.
 if (process.env.PORT) config.port = Number(process.env.PORT)

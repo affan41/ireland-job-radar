@@ -448,13 +448,10 @@ export function facets(opts = {}) {
     for (const r of rows) bySource[r.v] = r.n
   }
 
-  // The country tabs must show their own totals, so they are counted with the
-  // country filter itself lifted out of the query.
+  // The Ireland tab shows its total independently of the selected saved view.
   const byCountry = {}
   {
-    // The view is lifted out as well as the country switch, otherwise every country
-    // tab would report the size of whichever view happens to be open.
-    const { clause, params } = buildWhere({ ...opts, countries: [], view: '' })
+    const { clause, params } = buildWhere({ ...opts, countries: ['ie'], view: '' })
     const rows = db.prepare(`SELECT j.country AS v, COUNT(*) AS n ${JOINS} ${clause} GROUP BY j.country`).all(...params)
     for (const r of rows) byCountry[r.v ?? 'unknown'] = r.n
   }
@@ -497,10 +494,11 @@ export function setHidden(jobId, hidden) {
 }
 
 export function stats() {
-  const total = db.prepare('SELECT COUNT(*) AS n FROM jobs').get().n
-  const saved = db.prepare('SELECT COUNT(*) AS n FROM saved s JOIN jobs j ON j.id=s.job_id WHERE j.merged_into IS NULL').get().n
+  const scope = "merged_into IS NULL AND (country='ie' OR (country IS NULL AND region_key='remote'))"
+  const total = db.prepare(`SELECT COUNT(*) AS n FROM jobs WHERE ${scope}`).get().n
+  const saved = db.prepare(`SELECT COUNT(*) AS n FROM saved s JOIN jobs j ON j.id=s.job_id WHERE ${scope}`).get().n
   const since = new Date(Date.now() - 86400000).toISOString()
-  const fresh = db.prepare('SELECT COUNT(*) AS n FROM jobs WHERE first_seen >= ?').get(since).n
+  const fresh = db.prepare(`SELECT COUNT(*) AS n FROM jobs WHERE ${scope} AND first_seen >= ?`).get(since).n
   return { total, saved, newLast24h: fresh }
 }
 
