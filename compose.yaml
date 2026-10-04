@@ -1,0 +1,33 @@
+name: oneless
+
+services:
+  app:
+    build: .
+    image: oneless:local
+    init: true
+    restart: unless-stopped
+    # Keep the shared personal controls private until the public-access model
+    # and HTTPS front end have been configured.
+    ports:
+      - "127.0.0.1:8099:8099"
+    environment:
+      NODE_ENV: production
+      PORT: "8099"
+      JOBS_DB: /app/data/jobs.db
+      CAREERJET_API_KEY: ${CAREERJET_API_KEY:-}
+      ADZUNA_APP_ID: ${ADZUNA_APP_ID:-}
+      ADZUNA_APP_KEY: ${ADZUNA_APP_KEY:-}
+    volumes:
+      - jobs:/app/data
+      - backups:/app/backups
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  jobs:
+    name: oneless-jobs
+  backups:
+    name: oneless-backups
