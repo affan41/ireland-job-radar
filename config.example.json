@@ -1,6 +1,8 @@
 {
   "_comment": "Copy this to config.json and edit. Everything here is optional; the radar works with no config at all.",
   "port": 8099,
+  "home": null,
+  "_home_comment": "Optional, for distances: {\"name\": \"Home\", \"latitude\": 52.0, \"longitude\": -8.0}. config.json is not tracked by git, so this stays on your machine.",
   "refreshMinutes": 45,
   "pruneAfterDays": 30,
   "careerjet": {

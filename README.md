@@ -291,10 +291,12 @@ Restart and refresh.
 - Careerjet's own keyword matching is loose, which is what the match strength filter
   is there to clean up.
 
-### Distance from Troy Village and nearby towns
+### Distance from home and nearby towns
 
-Where the workplace is precise enough, a job card shows a straight-line distance from Troy Village,
-Castletroy (52.66382, -8.57677), with a link to check the actual route. An
+Set `home` in `config.json` (see `config.example.json`) to your own latitude and
+longitude. That file is not tracked by git, so the location stays on your machine;
+without it no distances are shown. Where the workplace is precise enough, a job
+then shows a straight-line distance from home, with a link to check the actual route. An
 advertised workplace pin is used when available. Otherwise a known shopping-centre
 reference point is used only when that centre is named in the workplace address.
 City-only, county-only, ambiguous and unsupported locations show "Exact workplace unknown";
@@ -311,8 +313,7 @@ Reference place coordinates are stored in `src/places.json`, so browsing does
 not send location requests to an external geocoder. Town points are a small
 extract from [GeoNames Ireland](https://download.geonames.org/export/dump/IE.zip),
 retrieved 19 September 2026, under [CC BY 4.0](https://www.geonames.org/about.html).
-The Troy origin is [OpenStreetMap way 375923751](https://www.openstreetmap.org/way/375923751)
-([ODbL attribution](https://www.openstreetmap.org/copyright)); the two shopping-centre
+The two shopping-centre
 points come from McDonald's public restaurant vacancy map pins. Place points
 are approximate and can be revised independently of job history.
 

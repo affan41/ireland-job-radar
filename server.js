@@ -115,7 +115,7 @@ const server = createServer(async (req, res) => {
     if (path === '/api/export.csv') {
       const { rows } = queryJobs({ ...filtersFrom(url), limit: 300 })
       const head = ['Title', 'Company', 'Location', 'Country', 'Region', 'Work mode', 'Job type',
-        'Sponsorship signal', 'Evidence', 'Salary', 'Posted', 'Source', 'Link', 'Distance from Troy Village', 'Distance basis', 'Status', 'Closing date', 'Last verified', 'Last checked', 'Verification note', 'Weekly hours min', 'Weekly hours max', 'Required shifts', 'Conflicts', 'Scheme', 'Application destination', 'Sponsorship source']
+        'Sponsorship signal', 'Evidence', 'Salary', 'Posted', 'Source', 'Link', 'Distance from home', 'Distance basis', 'Status', 'Closing date', 'Last verified', 'Last checked', 'Verification note', 'Weekly hours min', 'Weekly hours max', 'Required shifts', 'Conflicts', 'Scheme', 'Application destination', 'Sponsorship source']
       const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`
       const csv = [head.join(','), ...rows.map((r) => [
         r.title, r.company, r.location_raw, r.country, r.county_name, r.work_mode, r.employment_type,

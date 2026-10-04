@@ -353,7 +353,7 @@ function detailHtml(j, full) {
     ['Hours', j.hours_max != null ? hoursText(j) : hoursUnstated(j) ? 'Not stated in the advert' : ''],
     ['Closes', j.closing_at ? shortDate(j.closing_at) : ''],
     [j.posted_at ? 'Posted' : 'First found', posted ? timeAgo(posted) : ''],
-    ['Distance', d?.routeUrl ? `<a href="${esc(d.routeUrl)}" target="_blank" rel="noopener noreferrer" title="${esc(d.detail)}">${esc(d.label)} from Troy Village ↗</a>` : '', true],
+    ['Distance', d?.routeUrl ? `<a href="${esc(d.routeUrl)}" target="_blank" rel="noopener noreferrer" title="${esc(d.detail)}">${esc(d.label)} from home ↗</a>` : '', true],
     ['Salary', j.salary_text || ''],
     ['Source', [j.source_detail || SOURCE_LABELS[j.source] || j.source, sources.length > 1 ? `+ ${sources.length - 1} more` : ''].filter(Boolean).join(' ')],
     ['Checked', j.verification_status === 'open' ? `Open on ${shortDate(j.verified_at)}` : j.verification_status === 'closed' ? (j.verification_reason || 'Closed') : ''],

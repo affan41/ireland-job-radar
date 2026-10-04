@@ -10,6 +10,8 @@ const FILE = join(ROOT, 'config.json')
 
 const defaults = {
   port: 8099,
+  // { name, latitude, longitude } of where you live, for distances. Kept in config.json only.
+  home: null,
   refreshMinutes: 45,
   countries: ['ie'],
   refreshOnStart: true,

@@ -1,7 +1,10 @@
 import places from './places.json' with { type: 'json' }
+import { config } from './config.js'
 
-// Troy Village residential site, OpenStreetMap way 375923751, checked 2026-09-19.
-export const TROY_VILLAGE = { name: 'Troy Village', latitude: 52.66382, longitude: -8.57677 }
+// Where distances are measured from. It is personal, so it is read from the
+// untracked config.json and never stored in the code. Without it, no distances.
+const validHome = (h) => h && Number.isFinite(h.latitude) && Number.isFinite(h.longitude)
+export const HOME = validHome(config.home) ? { name: config.home.name || 'home', latitude: config.home.latitude, longitude: config.home.longitude } : null
 export function kilometresBetween(a, b) {
   const rad = x => x * Math.PI / 180
   const dlat = rad(b.latitude - a.latitude), dlon = rad(b.longitude - a.longitude)
@@ -17,9 +20,10 @@ const contains = (text, name) => {
 }
 const validPoint = (lat, lon) => typeof lat === 'number' && typeof lon === 'number' && Number.isFinite(lat) && Number.isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180 && !(lat === 0 && lon === 0)
 
-export function estimateDistance(job) {
+export function estimateDistance(job, home = HOME) {
   if (job.work_mode === 'remote') return { kind: 'remote', label: 'Remote', detail: 'No regular commute stated', km: null }
   const unavailable = { kind: 'unknown', label: 'Exact workplace unknown', detail: 'A precise workplace address or named shopping centre is needed', km: null }
+  if (!home) return unavailable
   let point, kind, place
   if (job.location_precision === 'workplace' && validPoint(job.latitude, job.longitude)) {
     point = { latitude: job.latitude, longitude: job.longitude }
@@ -39,12 +43,12 @@ export function estimateDistance(job) {
     if (matches.some(p => kilometresBetween(matches[0], p) > 15)) return { ...unavailable, detail: 'Multiple workplace areas are listed' }
     point = matches[0]; kind = 'area'; place = point.name
   }
-  const actualKm = kilometresBetween(TROY_VILLAGE, point)
+  const actualKm = kilometresBetween(home, point)
   const step = actualKm < 10 ? 0.5 : actualKm < 100 ? 1 : 5
   const km = Math.round(actualKm / step) * step
   const route = new URL('https://www.google.com/maps/dir/')
   route.searchParams.set('api', '1')
-  route.searchParams.set('origin', `${TROY_VILLAGE.latitude},${TROY_VILLAGE.longitude}`)
+  route.searchParams.set('origin', `${home.latitude},${home.longitude}`)
   route.searchParams.set('destination', kind === 'workplace' ? `${point.latitude},${point.longitude}` : `${place}, Ireland`)
   return { kind, km, label: km < 0.5 ? '<0.5 km' : `~${km} km`, place,
     detail: kind === 'workplace' ? 'Straight line to advertised workplace' : `Straight line to ${place} area; exact workplace may differ`,
