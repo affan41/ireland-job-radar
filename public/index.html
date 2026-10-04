@@ -3,96 +3,81 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Job Radar</title>
-<link rel="stylesheet" href="/styles.css">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📍</text></svg>">
+<title>OneLess · One less stress</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='46' fill='%23e8f5ef'/><circle cx='50' cy='50' r='26' fill='%230b7a55'/></svg>">
 </head>
 <body>
 
-<header class="topbar">
-  <div class="brand">
-    <h1>Job Radar</h1>
-    <p id="tagline">Loading</p>
-  </div>
-  <nav class="countries" id="countries"></nav>
-  <div class="topbar-actions">
+<header class="top">
+  <h1 title="One less stress.">One<span>Less</span></h1>
+  <nav class="tabs" id="tabs"></nav>
+  <div class="top-right">
+    <span id="tagline" class="tagline"></span>
     <span id="runState" class="runstate"></span>
-    <button id="refreshBtn" class="btn">Refresh now</button>
+    <button id="notesBtn" class="btn ghost">Notes</button>
+    <button id="refreshBtn" class="btn">Refresh</button>
   </div>
 </header>
 
-<div id="permitNote" class="permit-note" hidden></div>
+<div class="filters" id="filters">
+  <input type="search" id="q" placeholder="Search title, company or text" autocomplete="off">
 
-<div class="layout">
+  <label class="chip chip-select">
+    <span>Posted</span>
+    <select id="days">
+      <option value="0">Any time</option>
+      <option value="1">24 hours</option>
+      <option value="3">3 days</option>
+      <option value="7">7 days</option>
+      <option value="14" selected>14 days</option>
+      <option value="30">30 days</option>
+    </select>
+  </label>
 
-  <aside class="sidebar" id="sidebar">
-    <div class="field">
-      <input type="search" id="q" placeholder="Search title, company or text" autocomplete="off">
-    </div>
+  <details class="chip" data-chip="types">
+    <summary>Job type<b class="badge"></b></summary>
+    <div class="pop"><div id="types" class="checks"></div></div>
+  </details>
 
-    <section class="panel">
-      <div class="panel-head">
-        <h2>Visa sponsorship</h2>
-        <button class="link" data-clear="sponsorship">Clear</button>
-      </div>
-      <div id="sponsorship" class="checklist"></div>
-      <p class="panel-note">Only explicit advert statements are shown. No employer-based guesses.</p>
-    </section>
+  <details class="chip" data-chip="modes">
+    <summary>Working pattern<b class="badge"></b></summary>
+    <div class="pop"><div id="modes" class="checks"></div></div>
+  </details>
 
-    <section class="panel">
-      <div class="panel-head">
-        <h2>Region</h2>
-        <button class="link" data-clear="regions">Clear</button>
-      </div>
-      <div id="regions" class="regions"></div>
-    </section>
+  <details class="chip" data-chip="regions">
+    <summary>Region<b class="badge"></b></summary>
+    <div class="pop pop-tall"><div id="regions" class="checks"></div></div>
+  </details>
 
-    <section class="panel">
-      <div class="panel-head">
-        <h2>Category</h2>
-        <button class="link" data-clear="groups">Clear</button>
-      </div>
-      <div id="groups" class="checklist"></div>
-    </section>
+  <details class="chip" data-chip="groups">
+    <summary>Category<b class="badge"></b></summary>
+    <div class="pop"><div id="groups" class="checks"></div></div>
+  </details>
 
-    <section class="panel">
-      <div class="panel-head"><h2>Working pattern</h2></div>
-      <div id="modes" class="checklist"></div>
-    </section>
-
-    <section class="panel">
-      <div class="panel-head">
-        <h2>Job type</h2>
-        <button class="link" data-clear="types">Clear</button>
-      </div>
-      <div id="types" class="checklist"></div>
-    </section>
-
-    <section class="panel">
-      <div class="panel-head"><h2>Hours, availability and checks</h2></div>
-      <label class="field-row"><span>Maximum weekly hours</span><select id="maxHours"><option value="0">Any / unknown</option><option value="10">10 hours</option><option value="15">15 hours</option><option value="20">20 hours</option><option value="25">25 hours</option><option value="30">30 hours</option></select></label>
-      <label class="field-row"><span>Availability</span><select id="availability"><option value="">Any / unknown</option><option value="weekends">Weekends only</option><option value="evenings">Evenings only</option><option value="weekdays">Weekdays only</option></select></label>
-      <p class="hint">Hours filters exclude unknown hours. Availability uses stated shifts and excludes conflicting or variable patterns. Check the full timetable with the employer.</p>
-      <label class="field-row"><span>Advert status</span><select id="status"><option value="">Open + unverified</option><option value="open">Verified open (last 7 days)</option><option value="unverified">Unverified</option><option value="closed">Archived / closed</option></select></label>
-      <label class="field-row"><span>Vacancy type</span><select id="scheme"><option value="ordinary">Ordinary vacancies</option><option value="schemes">CE / WPEP schemes</option></select></label>
-      <label class="toggle"><input type="checkbox" id="noConflicts"><span>Exclude conflicting hours / contracts</span></label>
-    </section>
-    <section class="panel">
-      <div class="panel-head"><h2>Refine</h2></div>
-
-      <label class="field-row">
-        <span>Posted within</span>
-        <select id="days">
-          <option value="0">Any time</option>
-          <option value="1">24 hours</option>
-          <option value="3">3 days</option>
-          <option value="7">7 days</option>
-          <option value="14" selected>14 days</option>
-          <option value="30">30 days</option>
-        </select>
+  <details class="chip" data-chip="hours">
+    <summary>Hours<b class="badge"></b></summary>
+    <div class="pop">
+      <label class="field" title="Leaves out adverts that do not state their hours.">
+        <span>Max weekly hours</span>
+        <select id="maxHours"><option value="0">Any</option><option value="10">10 hours</option><option value="15">15 hours</option><option value="20">20 hours</option><option value="25">25 hours</option><option value="30">30 hours</option></select>
       </label>
+      <label class="field" title="Uses the shifts stated in the advert. Variable or conflicting patterns are left out.">
+        <span>Availability</span>
+        <select id="availability"><option value="">Any</option><option value="weekends">Weekends only</option><option value="evenings">Evenings only</option><option value="weekdays">Weekdays only</option></select>
+      </label>
+      <label class="check"><input type="checkbox" id="noConflicts"><span>Exclude conflicting hours or contracts</span></label>
+      <div id="viewOptions" hidden>
+        <label class="check"><input type="checkbox" id="includeUnstated"><span>Include jobs with hours not stated</span></label>
+        <label class="check"><input type="checkbox" id="includeNearby"><span>Include Shannon, Ennis and Nenagh</span></label>
+      </div>
+    </div>
+  </details>
 
-      <label class="field-row">
+  <details class="chip" data-chip="more">
+    <summary>More<b class="badge"></b></summary>
+    <div class="pop pop-tall">
+      <label class="field">
         <span>Match strength</span>
         <select id="minScore">
           <option value="0">Anything related</option>
@@ -100,8 +85,7 @@
           <option value="20">Strong match</option>
         </select>
       </label>
-
-      <label class="field-row">
+      <label class="field">
         <span>Salary at least</span>
         <select id="salaryMin">
           <option value="0">Any</option>
@@ -113,50 +97,50 @@
           <option value="90000">€90,000</option>
         </select>
       </label>
-
-      <label class="toggle">
-        <input type="checkbox" id="savedOnly">
-        <span>Shortlist only</span>
-      </label>
-    </section>
-
-    <section class="panel">
-      <div class="panel-head"><h2>Source</h2></div>
-      <div id="sources" class="checklist"></div>
-    </section>
-
-    <button class="btn btn-quiet full" id="resetAll">Reset all filters</button>
-  </aside>
-
-  <main class="main">
-    <p class="distance-note">Search directly: <a href="https://limerick-csm.symplicity.com/" target="_blank" rel="noopener">UL MYCareerPath (UL login required)</a> · <a href="https://www.careerjet.ie/search/jobs?s=part+time&amp;l=Limerick" target="_blank" rel="noopener">Careerjet</a> · <a href="https://ie.indeed.com/jobs?q=part+time&amp;l=Limerick" target="_blank" rel="noopener">Indeed (manual search)</a></p>
-    <div id="nearbyOptions" class="nearby-options" hidden>
-      <label class="toggle"><input type="checkbox" id="includeNearby"><span>Include nearby towns: Shannon, Ennis and Nenagh</span></label>
+      <label class="field"><span>Advert status</span><select id="status"><option value="">Open + unverified</option><option value="open">Verified open (last 7 days)</option><option value="unverified">Unverified</option><option value="closed">Archived / closed</option></select></label>
+      <label class="field"><span>Vacancy type</span><select id="scheme"><option value="ordinary">Ordinary vacancies</option><option value="schemes">CE / WPEP schemes</option></select></label>
+      <h3 class="pop-head">Visa sponsorship</h3>
+      <div id="sponsorship" class="checks" title="Only explicit advert statements are counted. No employer-based guesses."></div>
+      <h3 class="pop-head">Source</h3>
+      <div id="sources" class="checks"></div>
     </div>
-    <p class="distance-note">Distances from Troy Village are shown only for a precise workplace point or named shopping centre. City-only locations show “Exact workplace unknown”. Routes can be longer than the straight-line estimate. <a href="https://www.geonames.org/" target="_blank" rel="noopener">GeoNames</a> · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a></p>
-    <div class="resultbar">
-      <div id="count" class="count">Loading</div>
-      <div class="resultbar-right">
-        <label class="inline">
-          <span>Sort</span>
-          <select id="sort">
-            <option value="newest">Newest posted</option>
-            <option value="found">Recently found</option>
-            <option value="relevance">Best match</option>
-            <option value="salary">Highest salary</option>
-            <option value="company">Company A to Z</option>
-          </select>
-        </label>
-        <a id="exportBtn" class="btn btn-quiet" href="#">Export CSV</a>
-      </div>
-    </div>
+  </details>
 
-    <div id="results" class="results"></div>
-    <div id="pager" class="pager"></div>
-  </main>
-
+  <button class="chip chip-toggle" id="savedOnly" aria-pressed="false">Shortlist<b class="badge"></b></button>
+  <button class="reset" id="resetAll" hidden>Reset</button>
 </div>
 
-<script src="/app.js"></script>
+<div class="panes">
+  <section class="list-pane" id="listPane">
+    <div class="list-bar">
+      <span id="count" class="count">Loading</span>
+      <span class="list-bar-right">
+        <select id="sort" aria-label="Sort">
+          <option value="newest">Newest posted</option>
+          <option value="found">Recently found</option>
+          <option value="relevance">Best match</option>
+          <option value="salary">Highest salary</option>
+          <option value="company">Company A to Z</option>
+        </select>
+        <a id="exportBtn" class="quiet-link" href="#" role="button" title="Download these results as a spreadsheet">CSV</a>
+      </span>
+    </div>
+    <ul id="results" class="rows"></ul>
+    <div id="pager" class="pager"></div>
+  </section>
+
+  <article class="detail-pane" id="detail"></article>
+</div>
+
+<dialog id="notes" class="notes">
+  <h2>Notes</h2>
+  <p id="viewNote"></p>
+  <p id="distanceNote">Distances are straight-line estimates from Troy Village, shown only for a precise workplace point or named shopping centre. Routes can be longer. <a href="https://www.geonames.org/" target="_blank" rel="noopener">GeoNames</a> · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a></p>
+  <p>Other places to search: <a href="https://limerick-csm.symplicity.com/" target="_blank" rel="noopener">UL MYCareerPath (UL login required)</a> · <a href="https://www.careerjet.ie/search/jobs?s=part+time&amp;l=Limerick" target="_blank" rel="noopener">Careerjet</a> · <a href="https://ie.indeed.com/jobs?q=part+time&amp;l=Limerick" target="_blank" rel="noopener">Indeed (manual search)</a></p>
+  <form method="dialog"><button class="btn">Close</button></form>
+</dialog>
+
+<script type="module" src="api.js"></script>
+<script type="module" src="app.js"></script>
 </body>
 </html>

@@ -1,4 +1,6 @@
-# Job Radar
+# OneLess
+
+*One less stress.* Part-time jobs for students in Ireland, on one page.
 
 One portal for jobs across Ireland, filterable by region and visa sponsorship,
 with remote part-time and Limerick views, refreshed on a timer.
@@ -18,7 +20,7 @@ cd ~/ireland-job-radar && npm start
 
 Then open http://localhost:8099
 
-The tabs across the top show Ireland, Remote part time and Limerick part time.
+The tabs across the top show All Ireland and Part time (Limerick plus remote).
 Collection and displayed results are limited to Ireland and eligible remote work.
 
 The first launch finds an empty database and runs an initial collection, which takes
@@ -89,7 +91,7 @@ multinational status, source websites, relocation packages and references to per
 eligibility do not establish an offer. Unsubstantiated labels are `Not stated`.
 The card and CSV retain the supporting sentence and source advert URL.
 
-## The Limerick part time tab
+## The Part time tab
 
 A saved view rather than a country. It shows work you could take alongside a course
 at the University of Limerick, which means two things at once:
@@ -102,7 +104,12 @@ at the University of Limerick, which means two things at once:
 The advert must indicate part-time work, through its title, description, stated
 weekly hours or a source employment-type field. Search keywords, a student category,
 evening/weekend shifts, and temporary or seasonal contracts do not establish
-part-time hours. Listings with unknown hours are excluded from this tab.
+part-time hours.
+
+Listings with unknown hours are left out unless **Include jobs with hours not
+stated** is ticked under Hours (it is on by default). That adds shop, food,
+cleaning, care and warehouse jobs whose advert gives no hours at all, each tagged
+"Hours not stated". They can turn out to be full time, so confirm before applying.
 
 Explicit full-time titles, full-time source fields and weekly hours of 30 or more
 are excluded. Mixed full-time/part-time descriptions are excluded unless the title
@@ -144,14 +151,15 @@ and Workable's employment-type fields are used to identify part-time hours.
 
 Customise `localSearch.brands` and `localSearch.brandCities` in `config.json`.
 
-## Remote part time for students in Ireland
+## Remote part-time leads for students in Ireland
 
-The `Remote part time` tab focuses on support, administration, tutoring, data entry,
-research assistance and related roles. It requires advertised part-time work, a
-remote working pattern and a hiring location that includes Ireland. It excludes
+Remote leads appear inside the Part time tab; tick Remote under Working pattern
+to see only those. They focus on support, administration, tutoring, data entry,
+research assistance and related roles. They require advertised part-time work, a
+remote working pattern and a hiring location that includes Ireland. They exclude
 senior roles, hybrid work, explicit freelance/self-employed gigs, survey panels
-and known schedules above 20 hours/week. Missing hours are clearly flagged on
-each card for checking with the employer. These are potential matches, not a
+and known schedules above 20 hours/week. A card with no hours tag did not state
+its hours, so check with the employer. These are potential matches, not a
 guarantee of eligibility, experience fit or compatibility with lectures.
 
 The 33 nationwide searches include role, evening/weekend and named employer
@@ -176,7 +184,8 @@ rules apply to all new sources; unknown hours never qualify through a search ter
 
 ## Filters
 
-- **Views.** Ireland, Remote part time and Limerick part time.
+- **Views.** All Ireland and Part time. The Part time tab looks back 30 days by
+  default rather than 14.
 - **Region.** All 26 counties of the Republic plus the six in Northern
   Ireland, grouped by province. Each with a live count, and regions with nothing
   in them hidden. Remote and country-wide listings get their own buckets.
@@ -200,13 +209,13 @@ rate still sorts correctly against a salaried role.
 
 Every listing has a **Shortlist** button and a **Hide** button. Shortlisted jobs
 survive the automatic clear-out of stale listings; hidden ones stop appearing.
-Tick "Shortlist only" in the sidebar to see just the ones you kept, and **Export CSV**
+Press Shortlist in the filter bar to see just the ones you kept, and **Export CSV**
 writes the current filtered view out to a spreadsheet.
 
 ## Keeping it current
 
 While `npm start` is running it refreshes every 45 minutes on its own, and the
-**Refresh now** button in the top right forces one.
+**Refresh** button in the top right forces one.
 
 Listings are retained. Explicitly closed adverts and passed closing dates are archived; failed checks and stale verification are unverified. Shortlists, hidden choices and duplicate history are preserved.
 
@@ -353,3 +362,21 @@ client. Existing Careerjet attribution/tracking links remain intact, and the UI 
 an attributed Careerjet search shortcut. Publisher access terms must cover your use;
 no legacy public endpoint or invented IP is used. Without a key, employer sources and
 other configured public feeds still work.
+
+## The hosted site
+
+A public copy is published to GitHub Pages by `.github/workflows/publish.yml`. Every
+two hours the workflow collects jobs, runs `npm run build:site` and deploys `dist/`.
+There is no server: the page reads exported files and filters them in the browser
+(`site/api.js` and `site/static-core.js`, which mirror the queries in `src/db.js`).
+
+What differs from the local app:
+
+- The shortlist and hidden jobs are kept in each visitor's browser.
+- There is no Refresh button, and only adverts from the last 30 days are published.
+- Distances are left out, along with anything else personal.
+- Careerjet is not collected on a schedule, so the hosted list is smaller than a
+  local database that was filled by manual refreshes.
+
+To preview it locally, run `npm run build:site` and serve `dist/` with any static
+file server.

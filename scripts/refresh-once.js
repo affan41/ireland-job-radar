@@ -1,7 +1,7 @@
 // Runs a single refresh and exits. Useful for a cron job or a quick manual top-up.
 import { runRefresh } from '../src/refresh.js'
 
-console.log('Refreshing Ireland Job Radar...\n')
+console.log('Refreshing OneLess...\n')
 runRefresh()
   .then((r) => {
     console.log(`\nScanned ${r.scanned}, added ${r.added}, still live ${r.refreshed}, off-profile ${r.dropped}, expired ${r.pruned}`)

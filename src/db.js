@@ -1,6 +1,7 @@
 import { DatabaseSync } from 'node:sqlite'
 import {createHash} from 'node:crypto'
-import { VIEWS, viewClause } from './views.js'
+import { VIEWS, VIEW_BY_KEY, viewClause } from './views.js'
+import { studentRole } from './normalise.js'
 import {canonicalJobUrl, employerJobKey} from './job-evidence.js'
 import { estimateDistance } from './distance.js'
 import { mkdirSync } from 'node:fs'
@@ -109,6 +110,13 @@ if (!jobColumns.has('country')) {
 }
 if (!jobColumns.has('career_role')) {
   db.exec('ALTER TABLE jobs ADD COLUMN career_role INTEGER DEFAULT 0')
+}
+if (!jobColumns.has('student_role')) {
+  db.exec('ALTER TABLE jobs ADD COLUMN student_role INTEGER DEFAULT 0')
+  const mark = db.prepare('UPDATE jobs SET student_role = 1 WHERE id = ?')
+  db.exec('BEGIN')
+  for (const row of db.prepare('SELECT id, title FROM jobs').all()) if (studentRole(row.title)) mark.run(row.id)
+  db.exec('COMMIT')
 }
 if (!jobColumns.has('sponsorship')) {
   db.exec("ALTER TABLE jobs ADD COLUMN sponsorship TEXT DEFAULT 'unknown'")
@@ -261,12 +269,12 @@ export function upsertJob(input) {
   db.prepare(`UPDATE jobs SET title=?,full_description=?,closing_at=COALESCE(?,closing_at),checked_at=COALESCE(?,checked_at),
     verified_at=COALESCE(?,verified_at),verification_status=?,verification_reason=?,application_url=COALESCE(?,application_url),
     employer_job_id=COALESCE(?,employer_job_id),hours_min=?,hours_max=?,hours_evidence=?,shifts=?,availability=?,conflicts=?,scheme=?,
-    location_precision=?,title_needs_review=?,sponsorship_evidence=?,sponsorship_source=? WHERE id=?`).run(
+    location_precision=?,title_needs_review=?,sponsorship_evidence=?,sponsorship_source=?,student_role=? WHERE id=?`).run(
     j.title,j.fullDescription||j.description||'',j.closingAt??null,j.checkedAt??null,j.verifiedAt??null,
     j.verificationStatus||'unverified',j.verificationReason||null,j.applicationUrl??null,j.employerJobId??null,
     j.hoursMin??null,j.hoursMax??null,JSON.stringify(j.hoursEvidence||[]),JSON.stringify(j.shifts||[]),
     (j.availability||[]).join(','),JSON.stringify(j.conflicts||[]),j.scheme||'ordinary',j.locationPrecision??null,
-    j.titleNeedsReview?1:0,j.sponsorshipEvidence??null,j.sponsorshipSource??null,j.id)
+    j.titleNeedsReview?1:0,j.sponsorshipEvidence??null,j.sponsorshipSource??null,j.studentRole?1:0,j.id)
   upsertSourceStmt.run(j.id, j.source, j.sourceDetail ?? '', j.url, j.seenAt)
   return isNew
 }
@@ -297,9 +305,13 @@ const SORTS = {
   company: 'j.company COLLATE NOCASE ASC',
 }
 
-// Builds the shared WHERE clause. `skip` names a filter to leave out, which is how
-// each facet counts what you would get if you changed only that one filter.
+const UNSTATED_HOURS = "(COALESCE(j.student_role, 0) = 1 AND j.employment_type = 'unspecified')"
+
+// Builds the shared WHERE clause. `skip` names a filter to leave out. FACET_BASE
+// leaves out every filter the facet counts vary, so one scan can serve them all.
+const FACET_BASE = '*'
 function buildWhere(opts = {}, skip = null) {
+  const skipped = (name) => skip === FACET_BASE || skip === name
   const where = ["j.merged_into IS NULL", "COALESCE(j.title_needs_review,0)=0"]
   const params = []
   if(opts.status === 'closed') where.push("(j.verification_status='closed' OR (j.closing_at IS NOT NULL AND substr(j.closing_at,1,10)<date('now')))")
@@ -316,33 +328,33 @@ function buildWhere(opts = {}, skip = null) {
 
   // The country switch is deliberately not skippable: every other facet count is
   // meant to describe the country you are currently looking at.
-  if (opts.countries?.length) {
+  if (skip !== FACET_BASE && opts.countries?.length) {
     where.push(`(j.country IN (${opts.countries.map(() => '?').join(',')})
       OR (j.country IS NULL AND j.region_key = 'remote'))`)
     params.push(...opts.countries)
   }
   // A saved view pins its own location and contract rules on top of whatever the
   // sidebar is asking for.
-  if (opts.view) {
+  if (skip !== FACET_BASE && opts.view) {
     const vc = viewClause(opts.view, opts)
     if (vc) {
       where.push(`(${vc.sql})`)
       params.push(...vc.params)
     }
   }
-  if (skip !== 'sponsorship' && opts.sponsorship?.length) {
+  if (!skipped('sponsorship') && opts.sponsorship?.length) {
     where.push(`COALESCE(j.sponsorship, 'unknown') IN (${opts.sponsorship.map(() => '?').join(',')})`)
     params.push(...opts.sponsorship)
   }
-  if (skip !== 'region' && opts.regions?.length) {
+  if (!skipped('region') && opts.regions?.length) {
     where.push(`j.region_key IN (${opts.regions.map(() => '?').join(',')})`)
     params.push(...opts.regions)
   }
-  if (skip !== 'region' && opts.provinces?.length) {
+  if (!skipped('region') && opts.provinces?.length) {
     where.push(`j.province IN (${opts.provinces.map(() => '?').join(',')})`)
     params.push(...opts.provinces)
   }
-  if (skip !== 'group' && opts.groups?.length) {
+  if (!skipped('group') && opts.groups?.length) {
     where.push(`(${opts.groups.map(() => `(',' || j.groups || ',') LIKE ?`).join(' OR ')})`)
     params.push(...opts.groups.map((g) => `%,${g},%`))
   }
@@ -350,18 +362,18 @@ function buildWhere(opts = {}, skip = null) {
     where.push(`(${opts.profiles.map(() => `(',' || j.profiles || ',') LIKE ?`).join(' OR ')})`)
     params.push(...opts.profiles.map((p) => `%,${p},%`))
   }
-  if (skip !== 'source' && opts.sources?.length) {
+  if (!skipped('source') && opts.sources?.length) {
     where.push(`EXISTS (
       SELECT 1 FROM job_sources jsf
       WHERE jsf.job_id = j.id AND jsf.source IN (${opts.sources.map(() => '?').join(',')})
     )`)
     params.push(...opts.sources)
   }
-  if (skip !== 'mode' && opts.workModes?.length) {
+  if (!skipped('mode') && opts.workModes?.length) {
     where.push(`j.work_mode IN (${opts.workModes.map(() => '?').join(',')})`)
     params.push(...opts.workModes)
   }
-  if (skip !== 'employmentType' && opts.employmentTypes?.length) {
+  if (!skipped('employmentType') && opts.employmentTypes?.length) {
     where.push(`j.employment_type IN (${opts.employmentTypes.map(() => '?').join(',')})`)
     params.push(...opts.employmentTypes)
   }
@@ -379,7 +391,10 @@ function buildWhere(opts = {}, skip = null) {
     params.push(new Date(Date.now() - Number(opts.days) * 86400000).toISOString())
   }
   if (Number(opts.minScore) > 0) {
-    where.push('j.score >= ?')
+    // Jobs let in for their title alone never earned a match score, because the
+    // student categories need part-time evidence. Do not let the score drop them.
+    const relax = opts.includeUnstated && (skip === FACET_BASE || VIEW_BY_KEY[opts.view]?.unstatedHours)
+    where.push(relax ? `(j.score >= ? OR ${UNSTATED_HOURS})` : 'j.score >= ?')
     params.push(Number(opts.minScore))
   }
   if (opts.savedOnly) where.push('s.job_id IS NOT NULL')
@@ -416,64 +431,90 @@ export function queryJobs(opts = {}) {
   return { total, rows: rows.map(j => ({ ...j, verification_status: effectiveStatus(j), distance: estimateDistance(j) })), limit, offset }
 }
 
+// One advert in full, for the reading pane.
+export function getJob(id) {
+  const j = db.prepare(`
+    SELECT j.*, (s.job_id IS NOT NULL) AS is_saved, s.note AS note,
+      (SELECT GROUP_CONCAT(DISTINCT js.source) FROM job_sources js WHERE js.job_id = j.id) AS available_sources
+    FROM jobs j LEFT JOIN saved s ON s.job_id = j.id WHERE j.id = ?
+  `).get(id)
+  return j ? { ...j, verification_status: effectiveStatus(j), distance: estimateDistance(j) } : null
+}
+
 // Counts for every filter option, across the whole result set rather than the
 // current page. Each dimension ignores its own filter, so the sidebar shows what
 // you would get if you changed only that one thing.
+//
+// One scan fetches every row that passes the filters no count varies, and the
+// rest is tallied here. Running a query per dimension rescanned the table a
+// dozen times on every click.
 export function facets(opts = {}) {
-  const tally = (skip, column) => {
-    const { clause, params } = buildWhere(opts, skip)
-    const rows = db.prepare(`SELECT ${column} AS v, COUNT(*) AS n ${JOINS} ${clause} GROUP BY ${column}`).all(...params)
-    return Object.fromEntries(rows.map((r) => [r.v ?? 'unspecified', r.n]))
-  }
+  const { clause, params } = buildWhere(opts, FACET_BASE)
+  const views = VIEWS.map((v) => ({ key: v.key, clause: viewClause(v.key, opts) }))
+  const viewColumns = views.map((v, i) => `, ${v.clause ? `(${v.clause.sql})` : '1'} AS view_${i}`).join('')
+  const rows = db.prepare(`
+    SELECT j.region_key, j.province, j.groups, j.work_mode, j.employment_type, j.country, j.score,
+      COALESCE(j.sponsorship, 'unknown') AS sponsorship,
+      (SELECT GROUP_CONCAT(DISTINCT js.source) FROM job_sources js WHERE js.job_id = j.id) AS sources
+      ${viewColumns}
+    ${JOINS} ${clause}
+  `).all(...views.flatMap((v) => v.clause?.params || []), ...params)
 
-  // groups is a comma separated list, so it has to be counted in JavaScript.
-  const byGroup = {}
-  {
-    const { clause, params } = buildWhere(opts, 'group')
-    for (const r of db.prepare(`SELECT j.groups AS g ${JOINS} ${clause}`).all(...params)) {
-      for (const g of String(r.g || '').split(',').filter(Boolean)) byGroup[g] = (byGroup[g] || 0) + 1
+  const chosen = (values) => (values?.length ? new Set(values) : null)
+  const want = {
+    sponsorship: chosen(opts.sponsorship),
+    regions: chosen(opts.regions),
+    provinces: chosen(opts.provinces),
+    groups: chosen(opts.groups),
+    sources: chosen(opts.sources),
+    modes: chosen(opts.workModes),
+    types: chosen(opts.employmentTypes),
+    countries: chosen(opts.countries),
+  }
+  const currentView = views.findIndex((v) => v.key === opts.view && v.clause)
+  const minScore = Number(opts.minScore) || 0
+
+  const out = { byView: {}, byRegion: {}, byGroup: {}, bySource: {}, byCountry: {}, byMode: {}, byEmploymentType: {}, bySponsorship: {} }
+  for (const v of VIEWS) out.byView[v.key] = 0
+  const bump = (bucket, key) => { bucket[key] = (bucket[key] || 0) + 1 }
+
+  for (const r of rows) {
+    const groups = r.groups ? r.groups.split(',').filter(Boolean) : []
+    const sources = r.sources ? r.sources.split(',') : []
+    const pass = {
+      sponsorship: !want.sponsorship || want.sponsorship.has(r.sponsorship),
+      region: (!want.regions || want.regions.has(r.region_key)) && (!want.provinces || want.provinces.has(r.province)),
+      group: !want.groups || groups.some((g) => want.groups.has(g)),
+      source: !want.sources || sources.some((s) => want.sources.has(s)),
+      mode: !want.modes || want.modes.has(r.work_mode),
+      type: !want.types || want.types.has(r.employment_type),
     }
-  }
+    const failed = Object.keys(pass).filter((k) => !pass[k])
+    if (failed.length > 1) continue
+    const all = failed.length === 0
+    const only = failed[0]
 
-  const bySource = {}
-  {
-    const { clause, params } = buildWhere(opts, 'source')
-    const rows = db.prepare(`
-      SELECT js.source AS v, COUNT(DISTINCT j.id) AS n
-      ${JOINS}
-      JOIN job_sources js ON js.job_id = j.id
-      ${clause}
-      GROUP BY js.source
-    `).all(...params)
-    for (const r of rows) bySource[r.v] = r.n
-  }
+    const inCountry = !want.countries || want.countries.has(r.country) || (r.country == null && r.region_key === 'remote')
 
-  // The Ireland tab shows its total independently of the selected saved view.
-  const byCountry = {}
-  {
-    const { clause, params } = buildWhere({ ...opts, countries: ['ie'], view: '' })
-    const rows = db.prepare(`SELECT j.country AS v, COUNT(*) AS n ${JOINS} ${clause} GROUP BY j.country`).all(...params)
-    for (const r of rows) byCountry[r.v ?? 'unknown'] = r.n
-  }
+    // Only a view that takes unstated hours may count a row below the match score.
+    const scored = r.score >= minScore
+    if (all) {
+      // The Ireland tab shows its total independently of the selected saved view,
+      // and each view tab ignores the country switch.
+      if (scored && (r.country === 'ie' || (r.country == null && r.region_key === 'remote'))) bump(out.byCountry, r.country ?? 'unknown')
+      views.forEach((v, i) => { if (r[`view_${i}`] && (scored || VIEW_BY_KEY[v.key].unstatedHours)) out.byView[v.key]++ })
+    }
 
-  // Each saved view carries its own tab count, worked out the same way the country
-  // tabs are: current filters, minus the country switch and minus the view itself.
-  const byView = {}
-  for (const v of VIEWS) {
-    const { clause, params } = buildWhere({ ...opts, countries: [], view: v.key })
-    byView[v.key] = db.prepare(`SELECT COUNT(*) AS n ${JOINS} ${clause}`).get(...params).n
+    if (!inCountry || (currentView >= 0 && !r[`view_${currentView}`])) continue
+    if (!scored && !VIEW_BY_KEY[opts.view]?.unstatedHours) continue
+    if (all || only === 'region') bump(out.byRegion, r.region_key ?? 'unspecified')
+    if (all || only === 'group') for (const g of groups) bump(out.byGroup, g)
+    if (all || only === 'source') for (const s of sources) bump(out.bySource, s)
+    if (all || only === 'mode') bump(out.byMode, r.work_mode ?? 'unspecified')
+    if (all || only === 'type') bump(out.byEmploymentType, r.employment_type ?? 'unspecified')
+    if (all || only === 'sponsorship') bump(out.bySponsorship, r.sponsorship)
   }
-
-  return {
-    byView,
-    byRegion: tally('region', 'j.region_key'),
-    byGroup,
-    bySource,
-    byCountry,
-    byMode: tally('mode', 'j.work_mode'),
-    byEmploymentType: tally('employmentType', 'j.employment_type'),
-    bySponsorship: tally('sponsorship', `COALESCE(j.sponsorship, 'unknown')`),
-  }
+  return out
 }
 
 export function setSaved(jobId, saved, note) {
@@ -494,12 +535,12 @@ export function setHidden(jobId, hidden) {
 }
 
 export function stats() {
-  const scope = "merged_into IS NULL AND (country='ie' OR (country IS NULL AND region_key='remote'))"
-  const total = db.prepare(`SELECT COUNT(*) AS n FROM jobs WHERE ${scope}`).get().n
-  const saved = db.prepare(`SELECT COUNT(*) AS n FROM saved s JOIN jobs j ON j.id=s.job_id WHERE ${scope}`).get().n
   const since = new Date(Date.now() - 86400000).toISOString()
-  const fresh = db.prepare(`SELECT COUNT(*) AS n FROM jobs WHERE ${scope} AND first_seen >= ?`).get(since).n
-  return { total, saved, newLast24h: fresh }
+  const r = db.prepare(`SELECT COUNT(*) AS total, COALESCE(SUM(s.job_id IS NOT NULL), 0) AS saved,
+      COALESCE(SUM(j.first_seen >= ?), 0) AS fresh
+    FROM jobs j LEFT JOIN saved s ON s.job_id = j.id
+    WHERE j.merged_into IS NULL AND (j.country = 'ie' OR (j.country IS NULL AND j.region_key = 'remote'))`).get(since)
+  return { total: r.total, saved: r.saved, newLast24h: r.fresh }
 }
 
 // Missing from discovery does not prove closure. Preserve records and shortlists;

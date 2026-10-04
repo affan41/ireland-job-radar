@@ -34,22 +34,41 @@ test('Limerick part-time view requires part-time evidence regardless of category
   } finally { db.close() }
 })
 
+test('hours-not-stated option adds student-type roles with unknown hours and nothing else', () => {
+  const db = new DatabaseSync(':memory:')
+  try {
+    db.exec("CREATE TABLE jobs (title TEXT, region_key TEXT, work_mode TEXT DEFAULT 'onsite', employment_type TEXT, career_role INTEGER, student_role INTEGER, groups TEXT, remote_student_note TEXT)")
+    const insert = db.prepare('INSERT INTO jobs (title,region_key,employment_type,career_role,student_role) VALUES (?,?,?,?,?)')
+    for (const row of [
+      ['Part-time shop assistant', 'limerick', 'part_time', 0, 1],
+      ['Sales assistant', 'limerick', 'unspecified', 0, 1],
+      ['Quality officer', 'limerick', 'unspecified', 0, 0],
+      ['Full-time sales assistant', 'limerick', 'full_time', 0, 1],
+      ['Seasonal sales assistant', 'limerick', 'temporary', 0, 1],
+      ['Dublin sales assistant', 'dublin', 'unspecified', 0, 1],
+    ]) insert.run(...row)
+    const titles = (opts) => { const c = viewClause('limerick-pt', opts); return db.prepare(`SELECT title FROM jobs j WHERE ${c.sql} ORDER BY title`).all(...c.params).map(r => r.title) }
+    assert.deepEqual(titles({}), ['Part-time shop assistant'])
+    assert.deepEqual(titles({ includeUnstated: true }), ['Part-time shop assistant', 'Sales assistant'])
+  } finally { db.close() }
+})
+
 test('an unknown view produces no clause rather than an empty filter', () => {
   assert.equal(viewClause('nope'), null)
   assert.equal(viewClause(''), null)
   assert.equal(viewClause(undefined), null)
 })
 
-test('remote student view excludes unassessed, full-time and hybrid rows', () => {
+test('remote leads in the part-time view must be assessed, part-time and fully remote', () => {
   const db = new DatabaseSync(':memory:')
   try {
-    db.exec('CREATE TABLE jobs (title TEXT, remote_student_note TEXT, work_mode TEXT, employment_type TEXT)')
-    const insert = db.prepare('INSERT INTO jobs VALUES (?,?,?,?)')
+    db.exec("CREATE TABLE jobs (title TEXT, remote_student_note TEXT, work_mode TEXT, employment_type TEXT, region_key TEXT DEFAULT 'remote', career_role INTEGER DEFAULT 0, groups TEXT)")
+    const insert = db.prepare('INSERT INTO jobs (title,remote_student_note,work_mode,employment_type) VALUES (?,?,?,?)')
     insert.run('Remote support', 'Confirm hours', 'remote', 'part_time')
     insert.run('Unassessed', null, 'remote', 'part_time')
     insert.run('Full time', 'Old note', 'remote', 'full_time')
     insert.run('Hybrid', 'Old note', 'hybrid', 'part_time')
-    const c = viewClause('ireland-remote-pt')
+    const c = viewClause('limerick-pt')
     assert.deepEqual(db.prepare(`SELECT title FROM jobs j WHERE ${c.sql}`).all(...c.params).map(j => j.title), ['Remote support'])
   } finally { db.close() }
 })

@@ -182,6 +182,13 @@ const COMPILED = PROFILES.map((p) => ({
   partTimeOnly: Boolean(p.partTimeOnly),
 }))
 
+// Whether a title names the kind of work students commonly do (shop, food,
+// cleaning, warehouse and so on), whatever the advert says about hours.
+export function isStudentRoleTitle(title) {
+  const t = String(title || '')
+  return COMPILED.some((p) => p.partTimeOnly && p.terms.some((re) => re.test(t)))
+}
+
 // Scores a listing against every profile. Title hits are worth far more than
 // description hits, which is what separates a real match from a board's loose guess.
 export function classify(title, description, employmentType = detectEmploymentType(title, description)) {

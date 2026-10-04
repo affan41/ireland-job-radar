@@ -2,7 +2,7 @@
   "name": "ireland-job-radar",
   "version": "1.0.0",
   "private": true,
-  "description": "Ireland job search with local and remote part-time views, hours filters and advert verification.",
+  "description": "OneLess: Ireland job search with local and remote part-time views, hours filters and advert verification.",
   "type": "module",
   "engines": {
     "node": ">=22.5"
@@ -11,7 +11,8 @@
     "start": "node --no-warnings server.js",
     "refresh": "node --no-warnings scripts/refresh-once.js",
     "test": "node --test",
-    "backfill": "node --no-warnings scripts/backfill.js"
+    "backfill": "node --no-warnings scripts/backfill.js",
+    "build:site": "node --no-warnings scripts/build-site.js"
   },
   "dependencies": {
     "cheerio": "^1.2.0"

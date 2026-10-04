@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { resolveRegion, detectWorkMode, countryFallback } from './regions.js'
-import { classify, PROFILE_BY_ID } from './profiles.js'
+import { classify, isStudentRoleTitle, PROFILE_BY_ID } from './profiles.js'
 import { detectEmploymentType } from './employment.js'
 import { assessSponsorship } from './sponsorship.js'
 import {scheduleEvidence, schemeType, employerJobKey} from './job-evidence.js'
@@ -31,6 +31,10 @@ const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').tr
 
 // Titles that mean a career role rather than something you fit around lectures.
 export const SENIOR_TITLE = /\b(senior|lead|principal|head of|director|manager|management|consultant|engineer|developer|architect|analyst|scientist|accountant|solicitor|pharmacist|physiotherapist|nurse|doctor|surveyor|planner|controller|auditor|specialist)\b/i
+
+// A shop, food, cleaning or similar job that is not a senior post. Says nothing
+// about hours: it lets the part-time view offer these when hours are not stated.
+export const studentRole = (title) => (isStudentRoleTitle(title) && !SENIOR_TITLE.test(title) ? 1 : 0)
 
 // Legacy fallback identity. The database resolves employer IDs and advert/application
 // URLs first, and keeps distinct identified vacancies even when this hash matches.
@@ -204,6 +208,7 @@ export function buildJob(raw, seenAt) {
     employmentType,
     // Whether the title reads as a career position rather than casual work.
     careerRole: SENIOR_TITLE.test(title) ? 1 : 0,
+    studentRole: studentRole(title),
     profiles,
     groups,
     score,

@@ -8,7 +8,7 @@ import { allRegions, PROVINCE_ORDER, COUNTRIES } from './src/regions.js'
 import { VIEWS, VIEW_BY_KEY } from './src/views.js'
 import { SPONSORSHIP_LEVELS, PERMIT_NOTES } from './src/sponsorship.js'
 import { GROUPS, PROFILES } from './src/profiles.js'
-import { queryJobs, facets, setSaved, setHidden, stats, lastRun, recentRuns } from './src/db.js'
+import { queryJobs, getJob, facets, setSaved, setHidden, stats, lastRun, recentRuns } from './src/db.js'
 import { runRefresh, scheduleRefresh, refreshState } from './src/refresh.js'
 
 const ROOT = dirname(fileURLToPath(import.meta.url))
@@ -40,6 +40,7 @@ function filtersFrom(url) {
     scheme: p.get('scheme') || 'ordinary',
     noConflicts: p.get('noConflicts') === '1',
     includeNearby: p.get('nearby') === '1',
+    includeUnstated: p.get('unstated') === '1',
     // Ireland and eligible remote listings remain available in every view.
     countries: ['ie'],
     sponsorship: list(p.get('sponsorship')),
@@ -62,6 +63,12 @@ function filtersFrom(url) {
   }
 }
 
+// The list shows two lines of each advert. Sending the stored full text of fifty
+// of them made every page several times heavier than what is displayed.
+function listRow({ full_description, hours_evidence, profiles, groups, description, ...row }) {
+  return { ...row, description: description && description.length > 320 ? `${description.slice(0, 320)}…` : description }
+}
+
 async function readBody(req) {
   const chunks = []
   for await (const c of req) chunks.push(c)
@@ -80,7 +87,7 @@ const server = createServer(async (req, res) => {
         regions: allRegions().filter(r => !r.country || r.country === 'ie'),
         provinceOrder: PROVINCE_ORDER.filter(p => !['Cyprus','Malta'].includes(p)),
         countries: COUNTRIES.filter(c => c.code === 'ie').map((c) => ({ code: c.code, name: c.name, provinces: c.provinces })),
-        views: VIEWS.map((v) => ({ key: v.key, name: v.name, country: v.country, note: v.note, noteLink: v.noteLink })),
+        views: VIEWS.map((v) => ({ key: v.key, name: v.name, country: v.country, note: v.note, noteLink: v.noteLink, defaultDays: v.defaultDays })),
         sponsorshipLevels: SPONSORSHIP_LEVELS,
         permitNotes: {ie: PERMIT_NOTES.ie},
         groups: GROUPS,
@@ -95,7 +102,14 @@ const server = createServer(async (req, res) => {
     }
 
     if (path === '/api/jobs') {
-      return json(res, queryJobs(filtersFrom(url)))
+      const result = queryJobs(filtersFrom(url))
+      return json(res, { ...result, rows: result.rows.map(listRow) })
+    }
+
+    const jobMatch = path.match(/^\/api\/jobs\/([a-f0-9]+)$/)
+    if (jobMatch && req.method === 'GET') {
+      const job = getJob(jobMatch[1])
+      return job ? json(res, job) : json(res, { error: 'Not found' }, 404)
     }
 
     if (path === '/api/export.csv') {
@@ -111,7 +125,7 @@ const server = createServer(async (req, res) => {
       ].map(esc).join(','))].join('\n')
       res.writeHead(200, {
         'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': `attachment; filename="job-radar-${new Date().toISOString().slice(0, 10)}.csv"`,
+        'Content-Disposition': `attachment; filename="oneless-${new Date().toISOString().slice(0, 10)}.csv"`,
       })
       return res.end(csv)
     }
@@ -150,7 +164,7 @@ const server = createServer(async (req, res) => {
 server.listen(config.port, () => {
   const mins = scheduleRefresh()
   const s = stats()
-  console.log(`\n  Ireland Job Radar`)
+  console.log(`\n  OneLess. One less stress.`)
   console.log(`  http://localhost:${config.port}`)
   console.log(`  ${s.total} jobs stored, ${s.newLast24h} added in the last 24 hours`)
   console.log(`  Auto-refresh every ${mins} minutes`)

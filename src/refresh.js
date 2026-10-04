@@ -177,18 +177,23 @@ export async function runRefresh({ quiet = false, requestContext } = {}) {
     let refreshed = 0
     let dropped = 0
 
-    const writeAll = (rows) => {
-      for (const raw of rows) {
-        const job = buildJob(raw, seenAt)
-        // No profile matched at all means it is not a job you asked to see.
-        if (!job || job.score === 0 || ['cy','mt'].includes(job.country)) { dropped++; continue }
-        if (upsertJob(job)) added++
-        else refreshed++
-      }
+    // Written in short transactions with a pause between them. One transaction
+    // for the whole run froze the page for as long as the writing took.
+    const BATCH = 200
+    for (let i = 0; i < collected.length; i += BATCH) {
+      db.exec('BEGIN')
+      try {
+        for (const raw of collected.slice(i, i + BATCH)) {
+          const job = buildJob(raw, seenAt)
+          // No profile matched at all means it is not a job you asked to see.
+          if (!job || job.score === 0 || ['cy','mt'].includes(job.country)) { dropped++; continue }
+          if (upsertJob(job)) added++
+          else refreshed++
+        }
+        db.exec('COMMIT')
+      } catch (err) { db.exec('ROLLBACK'); throw err }
+      await new Promise((resolve) => setImmediate(resolve))
     }
-
-    db.exec('BEGIN')
-    try { writeAll(collected); db.exec('COMMIT') } catch (err) { db.exec('ROLLBACK'); throw err }
 
     if(config.verification?.enabled){
       const checked=await verifyStoredJobs({limit:config.verification.maxPerRefresh,onProgress:note})
