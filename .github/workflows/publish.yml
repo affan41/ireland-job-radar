@@ -44,6 +44,9 @@ jobs:
       - name: Restore public job history
         run: node --no-warnings scripts/seed-hosted-jobs.js
       - name: Collect jobs
+        # Code updates publish from the current cache + seed immediately. The
+        # scheduled and manual runs still collect fresh adverts before publishing.
+        if: github.event_name != 'push'
         run: npm run refresh
         env:
           ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
