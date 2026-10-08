@@ -277,7 +277,7 @@ async function renderEmptyState(host) {
     host.innerHTML = `<li class="empty"><h3>Nothing posted in the last ${esc(label)}</h3>
       <p>Your other filters match ${num(ignoringDate)} older listings.</p>
       <button class="btn" id="widenDate">Show them</button></li>`
-    $('#widenDate').addEventListener('click', () => setFilter('days', api.static ? '30' : '0'))
+    $('#widenDate').addEventListener('click', () => setFilter('days', '0'))
   } else {
     host.innerHTML = `<li class="empty"><h3>Nothing matches those filters</h3>
       <p>There are ${num(ignoringEverything)} jobs stored. Try a lower match strength under More, or fewer filters.</p>
@@ -619,11 +619,8 @@ function bind() {
 
 loadState()
 if (api.static) {
-  // The hosted site is rebuilt on a schedule and only carries recent adverts, so
-  // there is nothing to refresh by hand and no "any time" to look back to.
+  // Collection happens on the host's schedule; all date filters remain usable.
   $('#refreshBtn').hidden = true
-  $('#days option[value="0"]').remove()
-  if (state.days === '0') state.days = '30'
 }
 syncControls()
 bind()

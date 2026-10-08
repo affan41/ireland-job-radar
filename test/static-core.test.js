@@ -53,3 +53,18 @@ test('the shortlist lives with the visitor', () => {
   assert.equal(store.query(parseFilters('')).rows.find((r) => r.id === 'b').is_saved, 1)
   assert.equal(store.stats().saved, 1)
 })
+
+test('full history keeps old jobs searchable while closed and expired adverts stay in the archive', () => {
+  const store = createStore({ now: () => NOW, jobs: [
+    job('old', { first_seen: '2025-01-01T00:00:00.000Z' }),
+    job('fresh'), job('closed', { verification_status: 'closed' }),
+    job('expired', { closing_at: '2026-10-03' }),
+    job('stale-check', { verification_status: 'open', verified_at: '2026-09-01T00:00:00Z' }),
+    job('verified', { verification_status: 'open', verified_at: '2026-10-03T00:00:00Z' }),
+  ] })
+  assert.deepEqual(titles(store, 'days=0'), ['fresh', 'old', 'stale-check', 'verified'])
+  assert.deepEqual(titles(store, 'days=30'), ['fresh', 'stale-check', 'verified'])
+  assert.deepEqual(titles(store, 'status=closed'), ['closed', 'expired'])
+  assert.deepEqual(titles(store, 'status=open'), ['verified'])
+  assert.equal(store.query(parseFilters('q=stale-check')).rows[0].verification_status, 'unverified')
+})

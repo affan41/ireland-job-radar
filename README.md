@@ -374,10 +374,19 @@ There is no server: the page reads exported files and filters them in the browse
 What differs from the local app:
 
 - The shortlist and hidden jobs are kept in each visitor's browser.
-- There is no Refresh button, and only adverts from the last 30 days are published.
+- There is no Refresh button. The public job history is published, with the same
+  date filters as the local app, including Any time. Closed adverts appear only
+  under Archived / closed; verification still ages out after seven days.
 - Distances are left out, along with anything else personal.
-- Careerjet is not collected on a schedule, so the hosted list is smaller than a
-  local database that was filled by manual refreshes.
+- Careerjet is not collected on a schedule. Previously collected public adverts
+  are retained in `data/public-jobs.seed.json.gz`, preserving their attribution
+  links. The workflow restores missing history before collecting new adverts,
+  without overwriting newer evidence or closure decisions in its cached database.
+
+To update that public seed from the local database, run
+`node --no-warnings scripts/export-public-seed.js`. The exporter reads only public
+advert fields and source/identity records. It does not export saved jobs, notes,
+hidden choices, personal home coordinates, API credentials or configuration.
 
 To preview it locally, run `npm run build:site` and serve `dist/` with any static
 file server.

@@ -2,11 +2,12 @@
 // layer from site/, and the current jobs exported as static files.
 //
 // Nothing personal is exported: no shortlist, no hidden list, no home location
-// or distances. Only adverts from the last WINDOW_DAYS days are included.
+// or distances. The full public history supports the same date filters as local.
 import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { db, effectiveStatus, lastRun } from '../src/db.js'
+import { publicJobSnapshot } from '../src/public-jobs.js'
 import { VIEWS, viewClause } from '../src/views.js'
 import { allRegions, PROVINCE_ORDER, COUNTRIES } from '../src/regions.js'
 import { SPONSORSHIP_LEVELS, PERMIT_NOTES } from '../src/sponsorship.js'
@@ -14,7 +15,6 @@ import { GROUPS } from '../src/profiles.js'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const DIST = join(ROOT, 'dist')
-const WINDOW_DAYS = 30
 
 rmSync(DIST, { recursive: true, force: true })
 cpSync(join(ROOT, 'public'), DIST, { recursive: true })
@@ -26,14 +26,13 @@ writeFileSync(join(DIST, '.nojekyll'), '')
 const indexFile = join(DIST, 'index.html')
 writeFileSync(indexFile, readFileSync(indexFile, 'utf8').replace(/\s*<p id="distanceNote">[\s\S]*?<\/p>/, ''))
 
-const since = new Date(Date.now() - WINDOW_DAYS * 86400000).toISOString()
-const stored = db.prepare(`
-  SELECT j.*, (SELECT GROUP_CONCAT(DISTINCT js.source) FROM job_sources js WHERE js.job_id = j.id) AS available_sources
-  FROM jobs j
-  WHERE j.merged_into IS NULL AND COALESCE(j.title_needs_review, 0) = 0
-    AND (j.country = 'ie' OR (j.country IS NULL AND j.region_key = 'remote'))
-    AND COALESCE(j.posted_at, j.first_seen) >= ?
-`).all(since)
+const snapshot = publicJobSnapshot(db)
+const sources = new Map()
+for (const r of snapshot.sources) {
+  if (!sources.has(r.job_id)) sources.set(r.job_id, new Set())
+  sources.get(r.job_id).add(r.source)
+}
+const stored = snapshot.jobs.map((j) => ({ ...j, available_sources: [...(sources.get(j.id) || new Set([j.source]))].join(',') }))
 
 // Which jobs each view takes, for every combination of its two options. The bit
 // order matches viewBit in site/static-core.js: nearby is 1, unstated hours is 2.
@@ -55,8 +54,7 @@ const jobs = []
 const detail = {}
 for (const j of stored) {
   const status = effectiveStatus(j)
-  // Closed adverts are no use to a visitor, so they are left out entirely.
-  if (status === 'closed') continue
+  // Closed adverts remain available only through the explicit archive filter.
   const row = Object.fromEntries(LIST_FIELDS.filter((k) => j[k] != null && j[k] !== '').map((k) => [k, j[k]]))
   row.verification_status = status
   row.description = j.description && j.description.length > 320 ? `${j.description.slice(0, 320)}…` : j.description || undefined
@@ -88,8 +86,8 @@ writeFileSync(join(DIST, 'data', 'meta.json'), JSON.stringify({
   permitNotes: { ie: PERMIT_NOTES.ie },
   groups: GROUPS,
   lastRun: lastRun(),
-  windowDays: WINDOW_DAYS,
+  windowDays: null,
 }))
 
 const size = (file) => `${(readFileSync(join(DIST, 'data', file)).length / 1024).toFixed(0)} KB`
-console.log(`Built dist/ with ${jobs.length} jobs from the last ${WINDOW_DAYS} days (jobs.json ${size('jobs.json')}, ${Object.keys(detail).length} detail files)`)
+console.log(`Built dist/ with ${jobs.length} public jobs across the full history (jobs.json ${size('jobs.json')}, ${Object.keys(detail).length} detail files)`)

@@ -42,6 +42,7 @@ const unstatedHours = (r) => r.student_role === 1 && r.employment_type === 'unsp
 // combination of its two options, and stored as one bit each.
 const viewBit = (f) => 1 << ((f.includeNearby ? 1 : 0) + (f.includeUnstated ? 2 : 0))
 const inView = (r, key, f) => Boolean((r.views?.[key] || 0) & viewBit(f))
+const dublinDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Dublin' })
 
 export function createStore({ jobs, views = [], saved = new Set(), hidden = new Set(), now = () => Date.now() }) {
   const viewByKey = Object.fromEntries(views.map((v) => [v.key, v]))
@@ -57,7 +58,9 @@ export function createStore({ jobs, views = [], saved = new Set(), hidden = new 
   // title alone past the match score, as buildWhere does.
   function base(r, f, relax) {
     if (hidden.has(r.id)) return false
-    if (f.status === 'open' || f.status === 'unverified' || f.status === 'closed') { if (r.verification_status !== f.status) return false }
+    const status = advertStatus(r)
+    if (['open', 'unverified', 'closed'].includes(f.status)) { if (status !== f.status) return false }
+    else if (status === 'closed') return false
     if (f.scheme === 'schemes') { if (r.scheme !== 'ce' && r.scheme !== 'wpep') return false } else if ((r.scheme || 'ordinary') !== 'ordinary') return false
     if (f.maxHours > 0 && !(r.hours_max != null && r.hours_max <= f.maxHours)) return false
     if (f.availability) {
@@ -71,6 +74,12 @@ export function createStore({ jobs, views = [], saved = new Set(), hidden = new 
     if (f.minScore > 0 && !(r.score >= f.minScore || (relax && unstatedHours(r)))) return false
     if (f.savedOnly && !saved.has(r.id)) return false
     return true
+  }
+
+  function advertStatus(r) {
+    const today = dublinDate.format(new Date(now()))
+    if (r.verification_status === 'closed' || (r.closing_at && r.closing_at.slice(0, 10) < today)) return 'closed'
+    return r.verification_status === 'open' && Date.parse(r.verified_at) >= now() - 7 * 86400000 ? 'open' : 'unverified'
   }
 
   const chosen = (values) => (values?.length ? new Set(values) : null)
@@ -108,7 +117,7 @@ export function createStore({ jobs, views = [], saved = new Set(), hidden = new 
     const found = matching(f).sort(SORTS[f.sort] || SORTS.newest)
     return {
       total: found.length,
-      rows: found.slice(f.offset, f.offset + f.limit).map((r) => ({ ...r, is_saved: saved.has(r.id) ? 1 : 0 })),
+      rows: found.slice(f.offset, f.offset + f.limit).map((r) => ({ ...r, verification_status: advertStatus(r), is_saved: saved.has(r.id) ? 1 : 0 })),
       limit: f.limit,
       offset: f.offset,
     }

@@ -41,6 +41,8 @@ jobs:
           restore-keys: jobs-db-
 
       - run: npm test
+      - name: Restore public job history
+        run: node --no-warnings scripts/seed-hosted-jobs.js
       - name: Collect jobs
         run: npm run refresh
         env:
