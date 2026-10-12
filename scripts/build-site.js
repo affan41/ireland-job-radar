@@ -48,7 +48,7 @@ const LIST_FIELDS = ['id', 'title', 'company', 'location_raw', 'county_name', 'r
   'source', 'source_detail', 'available_sources', 'salary_text', 'salary_min', 'salary_max', 'salary_currency',
   'posted_at', 'first_seen', 'work_mode', 'employment_type', 'groups', 'score', 'sponsorship', 'sponsorship_reasons',
   'sponsorship_evidence', 'sponsorship_source', 'closing_at', 'verified_at', 'hours_min', 'hours_max', 'shifts',
-  'availability', 'conflicts', 'scheme', 'student_role', 'remote_student_note', 'title_repair_note', 'original_title']
+  'availability', 'conflicts', 'source_metadata', 'scheme', 'student_role', 'remote_student_note', 'title_repair_note', 'original_title']
 
 const jobs = []
 const detail = {}

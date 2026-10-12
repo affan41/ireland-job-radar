@@ -15,9 +15,9 @@ for (const [title, body, expected] of [
   ['Retail Assistant', '37.5 hours per week; part-time benefits available', 'full_time'],
   ['Part-time Assistant 40 Hours', '', 'full_time'],
   ['Part-time Assistant', '39 hours per week', 'full_time'],
-  ['Shop Assistant Full & Part-Time', '', 'full_time'],
+  ['Shop Assistant Full & Part-Time', '', 'full_or_part_time'],
   ['Part-Time Retail Assistant', 'We offer both full-time and part-time positions across our stores.', 'part_time'],
-  ['Customer Assistant', 'Full time and part time roles available.', 'full_time'],
+  ['Customer Assistant', 'Full time and part time roles available.', 'full_or_part_time'],
 ]) {
   test(`employment evidence: ${title} / ${body}`, () => {
     assert.equal(detectEmploymentType(title, body), expected)

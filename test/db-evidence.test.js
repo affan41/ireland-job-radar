@@ -42,3 +42,13 @@ test('merging preserves shortlist notes, hides, and the recoverable original row
  assert.match(db.prepare('SELECT note FROM saved WHERE job_id=?').get(a.id).note,/first note\nsecond note/)
  assert.ok(db.prepare('SELECT * FROM hidden WHERE job_id=?').get(a.id));assert.equal(db.prepare('SELECT merged_into FROM jobs WHERE id=?').get(b.id).merged_into,a.id)
 })
+test('source schedule metadata preserves contradictory labels across storage and reclassification',async()=>{
+ clear()
+ const j=make({title:'Kitchen Porter',description:'Kitchen duties.',metadata:'Full-time 20 hours per week',employmentType:'full_time'})
+ upsertJob(j)
+ const row=db.prepare('SELECT * FROM jobs WHERE id=?').get(j.id)
+ assert.equal(row.source_metadata,'Full-time 20 hours per week')
+ const {storedRaw}=await import('../src/verify-jobs.js')
+ const rebuilt=buildJob(storedRaw(row),now)
+ assert.equal(rebuilt.employmentType,'part_time');assert.equal(rebuilt.hoursMax,20);assert.ok(rebuilt.conflicts.length)
+})

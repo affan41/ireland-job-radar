@@ -1,5 +1,6 @@
 const PART_TIME_RE = /\bpart[\s-]*time\b/i
 const FULL_TIME_RE = /\bfull[\s-]*time\b|\bfull\s*(?:&|and|or|\/)\s*part[\s-]*time\b/i
+const MIXED_RE = /\b(?:full[\s-]*(?:time)?\s*(?:&|and|or|\/|,)\s*part[\s-]*time|part[\s-]*time\s*(?:&|and|or|\/|,)\s*full[\s-]*time)\b/i
 const TEMPORARY_RE = /\b(temporary|seasonal|fixed[\s-]?term|summer job|christmas staff)\b/i
 const CONTRACT_RE = /\b(contract(?:or)?|freelance|self[\s-]?employed)\b/i
 
@@ -33,6 +34,13 @@ export function detectEmploymentType(title, description = '', statedType) {
   const hay = `${heading} ${body}`
   const titleSignals = signals(heading, true)
   const bodySignals = signals(body)
+  // A specific full-time title, full-time source contract or 30+ hour schedule
+  // wins over generic promises of part-time options elsewhere at the company.
+  const mixedHeading = MIXED_RE.test(heading)
+  const mixedBody = !titleSignals.full && !titleSignals.part && statedType !== 'full_time'
+    && MIXED_RE.test(body) && /(?:positions?|roles?|contracts?|employment type)\b/i.test(body)
+  const explicitMixed = mixedHeading || mixedBody
+  if (explicitMixed && !titleSignals.fullHours && !bodySignals.fullHours) return 'full_or_part_time'
   if (statedType === 'full_time' || titleSignals.full || bodySignals.fullHours) return 'full_time'
   // The title is the strongest signal. Some broad descriptions say the employer
   // has both part-time and full-time contracts even when this specific vacancy is

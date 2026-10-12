@@ -19,8 +19,9 @@ export function scheduleEvidence(title = '', description = '', metadata = '') {
     }
   }
   const conflicts = []
-  const types = [['title',title],['metadata',metadata],['description',description]].map(([source,s])=>({source,part:/part[\s_-]*time/i.test(s),full:/full[\s_-]*time|whole[\s_-]*time/i.test(s)}))
+  const types = [['title',title],['metadata',metadata],['description',description]].map(([source,s])=>({source,part:/part[\s_-]*time/i.test(s),full:/full[\s_-]*(?:time)?\s*(?:&|and|or|,)\s*part[\s_-]*time|full[\s_-]*time|whole[\s_-]*time/i.test(s)}))
   if (types.some(t=>t.part) && types.some(t=>t.full)) conflicts.push('Part-time and full-time statements disagree or offer multiple contracts.')
+  if (types.some(t=>t.full) && hours.some(h=>h.max>0 && h.max<30)) conflicts.push('Full-time label conflicts with stated part-time hours; confirm the contract.')
   if (hours.length && new Set(hours.map(h=>`${h.min}-${h.max}`)).size > 1) conflicts.push('Different weekly hours are stated; confirm the actual contract.')
   if (types.some(t=>t.part) && hours.some(h=>h.max>=30)) conflicts.push('Part-time label conflicts with a schedule of 30+ hours/week.')
   const patterns=[]
@@ -57,7 +58,15 @@ export function canonicalJobUrl(value) {
 export function employerJobKey(value) {
   try {
     const u=new URL(value)
+    if(u.searchParams.has('rid'))return `${u.hostname.toLowerCase()}:${u.searchParams.get('org')||''}:${u.searchParams.get('rid')}`
     const id=u.searchParams.get('record') || u.searchParams.get('VacancyID') || u.pathname.match(/\/vacancies\/(\d+)\//i)?.[1]
+      || u.searchParams.get('rid') || u.searchParams.get('jobid')
+      || (/careers.dalatahotelgroup.com/.test(u.hostname) ? u.pathname.match(/-(\d+)\.htm$/)?.[1] : null)
+      || (/rezoomo.com/.test(u.hostname) ? u.pathname.match(/\/job\/(\d+)/)?.[1] : null)
+      || (/careers.lovisa.com/.test(u.hostname) ? u.pathname.match(/\/jobs\/(\d+)-/)?.[1] : null)
+      || (/careers.rituals.com/.test(u.hostname) ? u.pathname.match(/\/(R\d+)(?:\/|$)/)?.[1] : null)
+      || (/jobs.smartrecruiters.com/.test(u.hostname) ? u.pathname.match(/\/[^/]+\/(\d+)(?:-|$)/)?.[1] : null)
+      || u.searchParams.get('jk')
       || (/sallyeurope/.test(u.hostname) ? u.pathname.match(/\/job\/[^/]+\/(\d+)/)?.[1] : null)
     return id ? `${u.hostname.toLowerCase()}:${id}` : null
   } catch {return null}

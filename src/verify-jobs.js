@@ -7,7 +7,7 @@ export function storedRaw(j) {
     url:j.url,source:j.source,sourceDetail:j.source_detail,description:j.full_description||j.description,
     postedAt:j.posted_at,closingAt:j.closing_at,workMode:j.work_mode,employmentType:j.employment_type,
     applicationUrl:j.application_url,employerJobId:j.employer_job_id,latitude:j.latitude,longitude:j.longitude,
-    locationPrecision:j.location_precision,salaryText:j.salary_text}
+    locationPrecision:j.location_precision,salaryText:j.salary_text,metadata:j.source_metadata}
 }
 export async function verifyStoredJobs({limit=150,onProgress,request,ids}={}) {
   const rows=ids?.length ? db.prepare(`SELECT * FROM jobs WHERE id IN (${ids.map(()=>'?').join(',')}) AND merged_into IS NULL`).all(...ids)

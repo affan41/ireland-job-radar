@@ -1,6 +1,8 @@
 import {getPublicPage} from './public-page.js'
 import {verifyAdvert} from '../verification.js'
 import { clean } from '../normalise.js'
+import { load } from 'cheerio'
+import { isIrishLocation } from '../regions.js'
 
 const OLD_QUARTER = 'https://theoldquartergroup.ie'
 export function parseLocalVacancy(html, url) {
@@ -10,8 +12,9 @@ export function parseLocalVacancy(html, url) {
   if (!title || !description || !/Employment type:/i.test(description)) return null
   const body = clean(description, Infinity)
   if (/vacancy (?:is|has) (?:now )?(?:closed|expired)/i.test(body)) return null
-  const location = clean(html.match(/<p><strong>Location:\s*<\/strong>([\s\S]*?)<\/p>/i)?.[1])
-  if (!/limerick/i.test(location || body)) return null
+  const $=load(html)
+  const location = clean($('p').filter((i,e)=>/^Location\s*:/i.test($(e).text().trim())).first().text().replace(/^Location\s*:\s*/i,''))
+  if (!isIrishLocation(location || body)) return null
   return {
     title, company: /Fordes/i.test(body) ? 'Fordes Courtyard' : /Top House/i.test(body) ? 'The Top House' : 'The Old Quarter',
     locationRaw: location || 'Limerick, Ireland', description: body, url,

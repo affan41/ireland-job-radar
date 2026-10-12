@@ -118,10 +118,37 @@ specifically identifies a part-time vacancy. Part-time jobs can still require mo
 than 20 hours per week, so check the actual schedule before applying.
 
 Adverts explicitly offering both full-time and part-time positions, such as
-Supermac's Lobby Host roles, are retained in All Ireland with a contract warning.
-They remain excluded from the Part time view until a specific part-time contract
-is confirmed. Employer application paths blocked by robots rules stay unverified;
-the reader does not bypass those restrictions.
+Supermac's Lobby Host roles, have a separate full-time / part-time options label
+and a confirm-part-time-contract warning. They can appear in the Part time view
+without a claimed weekly schedule. The maximum-hours filter requires stated
+hours, so it excludes these unknown schedules. Employer application paths blocked
+by robots rules stay unverified; the reader does not bypass those restrictions.
+
+The Part time view now defaults to Any time so an old posting date does not hide
+a still-available vacancy. Explicit saved date filters remain respected. Closed
+adverts remain excluded unless the archive filter is selected; stale verification
+is labelled Unverified.
+
+### Employer discovery and specific advert checks
+
+An employer in the local search inventory is only a search target. A recurring
+collector reads the actual employer source. A specific advert check revisits an
+identified role but does not imply that every new role at that employer is found.
+
+| Employer | Recurring coverage |
+| --- | --- |
+| Rituals | Irish sitemap discovery, matched requisition metadata, advert and embedded application checks |
+| Carraig Donn and McCabes | Official careers frames and public Occupop vacancy data; application forms require a browser check |
+| Dalata | The public Limerick search and individual advert details; automated application access is restricted |
+| Brown Thomas | Paginated public search with an anonymous session, plus the identified Mint Velvet and Christmas roles |
+| Sally Beauty | Existing Sally Europe collector, supplemented by the identified 15-hour Limerick role |
+| Old Quarter Group | Existing careers index and matching application forms, including Top House Annacotty |
+| Costa, OCS and Lovisa | Recurring checks of the identified official adverts; wider source discovery is not implemented |
+| BaxterStorey | Recurring check of the identified Raheen advert; WSH API access is disallowed and automated application access returns 403 |
+
+The detailed raw contract metadata is retained and exported. Contradictory labels
+and schedules are displayed rather than silently discarded. Requisition-based
+identity keeps the Rituals 8-hour and 16-hour vacancies separate.
 
 The bar under the tab carries the hours you are allowed: 20 a week during term and
 40 a week in the holiday periods on Stamp 2. That is a reminder, not legal advice.

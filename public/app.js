@@ -38,7 +38,7 @@ let allRegions = false
 const wide = matchMedia('(min-width: 900px)')
 
 const STORE_KEY = 'ireland-job-radar.filters'
-const FILTER_VERSION = 3
+const FILTER_VERSION = 4
 
 function saveState() {
   const plain = { ...state, _version: FILTER_VERSION }
@@ -111,7 +111,7 @@ function money(min, max, currency) {
 }
 
 const MODE_LABELS = { hybrid: 'Hybrid', remote: 'Remote', onsite: 'On site', unspecified: 'Not stated' }
-const TYPE_LABELS = { part_time: 'Part-time', full_time: 'Full-time', temporary: 'Temporary / seasonal', contract: 'Contract', unspecified: 'Not stated' }
+const TYPE_LABELS = { part_time: 'Part-time', full_or_part_time: 'Full-time / part-time options', full_time: 'Full-time', temporary: 'Temporary / seasonal', contract: 'Contract', unspecified: 'Not stated' }
 const SPONSOR_LABELS = { explicit: 'Sponsorship offered', likely: 'Sponsorship not stated', unlikely: 'No sponsorship' }
 const SOURCE_LABELS = {
   jobalert: 'JobAlert.ie',
@@ -127,7 +127,7 @@ const SOURCE_LABELS = {
 const place = (j) => j.location_raw || j.county_name || ''
 const hoursText = (j) => `${j.hours_min == null ? `Up to ${j.hours_max}` : j.hours_min === j.hours_max ? j.hours_max : `${j.hours_min}–${j.hours_max}`} h/week`
 const isNew = (j) => j.first_seen && Date.now() - new Date(j.first_seen).getTime() < 86400000
-const hoursUnstated = (j) => j.hours_max == null && j.student_role && j.employment_type === 'unspecified'
+const hoursUnstated = (j) => j.hours_max == null && (['part_time', 'full_or_part_time'].includes(j.employment_type) || (j.student_role && j.employment_type === 'unspecified'))
 
 // A company gets the same colour every time, so the list is scannable by eye.
 function avatar(j, big = false) {
@@ -152,7 +152,9 @@ function tags(j) {
   if (j.verification_status === 'closed') out.push('<span class="tag bad">Closed</span>')
   else if (j.closing_at) out.push(`<span class="tag">Closes ${shortDate(j.closing_at)}</span>`)
   if (j.verification_status === 'open') out.push('<span class="tag good">Verified open</span>')
-  if (parseList(j.conflicts).length) out.push('<span class="tag bad">Conflicting details</span>')
+  else if (j.verification_status !== 'closed') out.push('<span class="tag outline">Unverified</span>')
+  if (j.employment_type === 'full_or_part_time') out.push('<span class="tag outline">Confirm part-time contract</span>')
+  else if (parseList(j.conflicts).length) out.push('<span class="tag bad">Conflicting details</span>')
   return out
 }
 
@@ -356,6 +358,7 @@ function detailHtml(j, full) {
     ['Distance', d?.routeUrl ? `<a href="${esc(d.routeUrl)}" target="_blank" rel="noopener noreferrer" title="${esc(d.detail)}">${esc(d.label)} from home ↗</a>` : '', true],
     ['Salary', j.salary_text || ''],
     ['Source', [j.source_detail || SOURCE_LABELS[j.source] || j.source, sources.length > 1 ? `+ ${sources.length - 1} more` : ''].filter(Boolean).join(' ')],
+    ['Source details', (j.source_metadata || '').replace(/\b(?:full_or_part_time|part_time|full_time|unspecified)\b/g, label=>TYPE_LABELS[label])],
     ['Checked', j.verification_status === 'open' ? `Open on ${shortDate(j.verified_at)}` : j.verification_status === 'closed' ? (j.verification_reason || 'Closed') : ''],
   ].filter(([, v]) => v)
 
@@ -465,7 +468,7 @@ function resetAll() {
   for (const k of SETS) state[k].clear()
   Object.assign(state, DEFAULTS, { q: '', noConflicts: false, savedOnly: false, includeNearby: true, includeUnstated: true, page: 0 })
   const view = (meta?.views || []).find((v) => v.key === state.view)
-  if (view?.defaultDays) state.days = String(view.defaultDays)
+  if (view?.defaultDays != null) state.days = String(view.defaultDays)
   syncControls()
   refreshAll()
 }
@@ -475,9 +478,9 @@ function switchView(key) {
   const views = meta.views || []
   // A view may look further back than the ordinary default; undo that on leaving.
   const leaving = views.find((v) => v.key === state.view)
-  if (leaving?.defaultDays && state.days === String(leaving.defaultDays)) state.days = DEFAULTS.days
+  if (leaving?.defaultDays != null && state.days === String(leaving.defaultDays)) state.days = DEFAULTS.days
   const entering = views.find((v) => v.key === key)
-  if (entering?.defaultDays && state.days === DEFAULTS.days) state.days = String(entering.defaultDays)
+  if (entering?.defaultDays != null && state.days === DEFAULTS.days) state.days = String(entering.defaultDays)
   state.view = key
   // The view decides the geography, so a leftover county filter would fight it.
   state.regions.clear()

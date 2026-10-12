@@ -2,13 +2,23 @@
 // full multi-source refresh. Ordinary scheduled runs also collect these feeds.
 import { fetchBestseller, fetchSostreneGrene } from '../src/sources/fashion.js'
 import { fetchSupermacs } from '../src/sources/retail.js'
+import { fetchStudentEmployers } from '../src/sources/student-employers.js'
+import { fetchLocalSites } from '../src/sources/local-sites.js'
+import { fetchRecruitee } from '../src/sources/recruitee.js'
+import { verifyAdvert } from '../src/verification.js'
 import { buildJob } from '../src/normalise.js'
 import { db, upsertJob } from '../src/db.js'
 
 const seenAt = new Date().toISOString()
 let stored = 0
 try {
-  for (const [name, collect] of [['BESTSELLER', fetchBestseller], ['Søstrene Grene', fetchSostreneGrene], ["Supermac's", fetchSupermacs]]) {
+  const spar = async () => {
+    const raws=await fetchRecruitee({name:'SPAR',slug:'sparcareers'})
+    const jobs=[]
+    for(const raw of raws.filter(j=>/Castletroy|Caherdavin/i.test(j.locationRaw))) jobs.push(await verifyAdvert(raw))
+    return {jobs,errors:[]}
+  }
+  for (const [name, collect] of [['BESTSELLER', fetchBestseller], ['Søstrene Grene', fetchSostreneGrene], ["Supermac's", fetchSupermacs],['Student employers',fetchStudentEmployers],['Old Quarter',fetchLocalSites],['Local SPAR',spar]]) {
     try {
       const result = await collect({ onProgress: console.log })
       let accepted = 0

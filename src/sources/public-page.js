@@ -21,7 +21,7 @@ export function robotsAllowed(text, pathname) {
   }
   return rules.sort((a,b)=>b.length-a.length || Number(b.allow)-Number(a.allow))[0]?.allow ?? true
 }
-export async function getPublicPage(value) {
+export async function getPublicPage(value,{cookieJar}={}) {
   let u=await permittedURL(value)
   for(let hop=0;hop<6;hop++) {
     if(!robots.has(u.origin)) {
@@ -30,7 +30,10 @@ export async function getPublicPage(value) {
       robots.set(u.origin,r.ok?await r.text():'')
     }
     if(!robotsAllowed(robots.get(u.origin),u.pathname+u.search))throw new Error('Public-page access disallowed by robots.txt')
-    const r=await fetch(u,{signal:AbortSignal.timeout(18000),headers:{'User-Agent':UA,Accept:'text/html,application/xml'},redirect:'manual'})
+    // Optional anonymous search session, isolated by origin and kept in memory.
+    const sessionCookie=cookieJar?.get(u.origin)
+    const r=await fetch(u,{signal:AbortSignal.timeout(18000),headers:{'User-Agent':UA,Accept:'text/html,application/xml',...(sessionCookie?{Cookie:sessionCookie}:{})},redirect:'manual'})
+    if(cookieJar){const cookies=r.headers.getSetCookie?.()||[];if(cookies.length){const values=new Map((sessionCookie||'').split('; ').filter(Boolean).map(c=>{const i=c.indexOf('=');return[c.slice(0,i),c.slice(i+1)]}));for(const c of cookies){const pair=c.split(';')[0],i=pair.indexOf('=');if(i>0)values.set(pair.slice(0,i),pair.slice(i+1))};cookieJar.set(u.origin,[...values].map(([k,v])=>`${k}=${v}`).join('; '))}}
     if(r.status>=300&&r.status<400&&r.headers.get('location')) {u=await permittedURL(new URL(r.headers.get('location'),u));continue}
     if(!r.ok&&![404,410].includes(r.status))throw new Error(`HTTP ${r.status}`)
     const html=await r.text();if(html.length>5000000)throw new Error('Page too large')

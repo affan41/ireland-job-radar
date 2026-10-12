@@ -1,6 +1,7 @@
 import {load} from 'cheerio'
 import {getPublicPage} from './sources/public-page.js'
 import {canonicalJobUrl,employerJobKey} from './job-evidence.js'
+import {ritualMetadata} from './advert-metadata.js'
 
 const tidy=s=>String(s||'').replace(/\s+/g,' ').trim()
 export function dateValue(value) {
@@ -14,6 +15,11 @@ export function parseAdvert(html,url) {
   const collect=o=>{if(!o||typeof o!=='object')return;if(Array.isArray(o))return o.forEach(collect);if([o['@type']].flat().includes('JobPosting'))schemas.push(o);if(o['@graph'])collect(o['@graph'])}
   $('script[type="application/ld+json"]').each((i,e)=>{try{collect(JSON.parse($(e).text()))}catch{}})
   const ld=schemas[0]||{}
+  const ritual=ritualMetadata(html,url)
+  const smart=$('script').map((i,e)=>$(e).text()).get().find(s=>s.includes('window.ONECLICKDATA'))||''
+  const smartCompany=smart.match(/cident:\s*'([^']+)'/)?.[1]
+  const smartId=smart.match(/pid:\s*(\d+)/)?.[1]
+  const smartPublication=smart.match(/puuid:\s*'([a-f0-9-]+)'/)?.[1]
   const micro=$('[itemscope][itemtype$="/JobPosting"]').first()
   const prop=name=>{const e=micro.find(`[itemprop="${name}"]`).first();return tidy(e.attr('content')||e.text())}
   const microDescription=micro.find('[itemprop="description"]').first().html()
@@ -27,7 +33,9 @@ export function parseAdvert(html,url) {
   const place=[ld.jobLocation].flat().filter(Boolean)[0]||{}, address=place.address||{}
   const country=typeof address.addressCountry==='object'?address.addressCountry.name:address.addressCountry
   const wpfield=name=>tidy(wpjob.find(`.wpjb-row-meta-${name} .wpjb-col-60`).text())
-  const location=[address.streetAddress,address.addressLocality,address.addressRegion,address.postalCode,country].filter(Boolean).join(', ')||prop('streetAddress')||fields.location||wpfield('_location')||''
+  const local=/^(?:www\.)?theoldquartergroup\.ie$/.test(new URL(url).hostname)
+  const localLocation=local ? $('p').filter((i,e)=>/^Location\s*:/i.test(tidy($(e).text()))).first().text().replace(/^Location\s*:\s*/i,'').trim() : ''
+  const location=[ritual?.locationName,address.streetAddress,address.addressLocality,address.addressRegion,address.postalCode,country].filter(Boolean).join(', ')||prop('streetAddress')||fields.location||wpfield('_location')||localLocation||''
   const descriptionHtml=ld.description||microDescription||wpjob.find('.wpjb-text').first().html()
   const detail=load(descriptionHtml||'');detail('br').replaceWith('\n');detail('p,li,div').append('\n')
   const description=descriptionHtml ? detail('body').text() : ($('.job-advert-content').text()||text)
@@ -36,22 +44,31 @@ export function parseAdvert(html,url) {
     || (new URL(url).hostname==='bestseller.com' ? micro.find('aside-job-details').attr('applylink') : null)
   let applicationUrl=null
   try{if(apply)applicationUrl=new URL(apply,url).href}catch{}
+  if(new URL(url).hostname==='jobs.smartrecruiters.com' && smartCompany && smartPublication
+      && new URL(url).pathname.includes(`/${smartCompany}/${smartId}`)) applicationUrl=`https://jobs.smartrecruiters.com/oneclick-ui/company/${encodeURIComponent(smartCompany)}/publication/${smartPublication}?dcr_ci=${encodeURIComponent(smartCompany)}`
   // Sally's public careers page loads this read-only login fragment, using the
   // job ID in #applySection. No application or account is created by this GET.
   const sallyId=$('#applySection[data-job-id]').attr('data-job-id')
   if(new URL(url).hostname==='careers.sallyeurope.com' && /^\d+$/.test(sallyId||'')) applicationUrl=`https://careers.sallyeurope.com/ApplyProcess/ApplyForJob?jobId=${sallyId}`
   // Old Quarter applications are an embedded CV form, never submitted here.
-  const inlineForm=$('form input[type="file"]').length>0
+  const ritualForm=ritual && $('#form form').filter((i,e)=>$(e).find('input[type="email"]').length && $(e).find('input[type="text"]').length>=2 && $(e).find('button').length).length>0
+  const localForm=local && /-application-form\/$/.test(new URL(url).pathname) && $('form').filter((i,e)=>$(e).find('input[type="email"]').length && $(e).find('.wpforms-field-file-upload').length && $(e).find('button[type="submit"]').length).length>0
+  const inlineForm=$('form input[type="file"]').length>0 || Boolean(ritualForm||localForm)
   if(inlineForm)applicationUrl=url
   const closed=/\b(?:this (?:job|vacancy|position|advert) (?:is |has (?:now )?been )?(?:now )?(?:closed|expired|filled)|no longer accepting applications|job (?:not found|has expired)|vacancy (?:not found|has expired))\b/i.test(text)
   const contract=ld.employmentType||prop('employmentType')||fields['contract type']||wpfield('_tag_type')||''
+  const smartHours=new URL(url).hostname==='jobs.smartrecruiters.com' ? $('.job-detail').filter((i,e)=>/Hours Per Week/i.test($(e).text())).first().text().match(/Hours Per Week:?\s*(\d+(?:\.\d+)?)/i)?.[1] : null
+  const weeklyField=$('.js-hours-per-week, .item.is-read-only').filter((i,e)=>/^Hours\s+Per\s+Week/i.test(tidy($(e).text()))).first().text().match(/Hours\s+Per\s+Week\s*:?(\s*\d+(?:\.\d+)?(?:\s*-\s*\d+(?:\.\d+)?)?)/i)?.[1]?.trim()
+  const contractHours=description.match(/\b(\d+(?:\.\d+)?)\s*hour\s+contract\b/i)?.[1]
+  const pay=ld.baseSalary?.value
+  const salaryText=pay?.value ? `${ld.baseSalary.currency||''} ${pay.value} per ${/HOUR/i.test(pay.unitText)?'hour':/YEAR/i.test(pay.unitText)?'year':pay.unitText||''}`.trim() : undefined
   return {title,description,locationRaw:location,company:ld.hiringOrganization?.name||prop('hiringOrganization')||undefined,
-    postedAt:dateValue(ld.datePosted||prop('datePosted')||wpfield('job_created_at')),closingAt,metadata:[contract,fields['working hours']].flat().filter(Boolean).join(' '),
+    postedAt:dateValue(ld.datePosted||prop('datePosted')||wpfield('job_created_at')),closingAt,metadata:[contract,fields['working hours'],ritual?.metadata,smartHours?`${smartHours} hours per week`:null,weeklyField?`${weeklyField} hours per week`:null,contractHours?`${contractHours} hours contract`:null].flat().filter(Boolean).join(' '),salaryText,
     employmentType:/full[_ -]?time/i.test(contract)?'full_time':/part[_ -]?time/i.test(contract)?'part_time':undefined,
     applicationUrl,inlineForm,closed,text,hasAdvert:Boolean((ld.title&&ld.description)||(micro.length&&prop('title')&&microDescription)||(wpjob.length&&title&&wpjob.find('.wpjb-text').length)||($('.job-advert-content').length&&title)||(/theoldquartergroup\.ie/.test(url)&&title&&/Employment type:/i.test(text))),
     latitude:address.streetAddress?Number(place.geo?.latitude)||null:null,longitude:address.streetAddress?Number(place.geo?.longitude)||null:null,
     locationPrecision:address.streetAddress?'workplace':null,
-    employerJobId:String(ld.identifier?.value||employerJobKey(url)||''),
+    employerJobId:String(ritual?.employerJobId||ld.identifier?.value||employerJobKey(url)||''),
   }
 }
 
@@ -75,10 +92,13 @@ export async function verifyAdvert(raw,{request=getPublicPage,now=new Date(),pag
     if(!p.inlineForm && canonicalJobUrl(p.applicationUrl)!==canonicalJobUrl(advert.url)) {
       const destination=await request(p.applicationUrl),target=parseAdvert(destination.html,destination.url)
       if([404,410].includes(destination.status)||target.closed)return {...enriched,verifiedAt:checkedAt,verificationStatus:'closed',verificationReason:'Application destination closed or removed'}
-      const jobId=new URL(advert.url).searchParams.get('record')||new URL(advert.url).pathname.match(/\/(\d+)(?:\/|$)/)?.[1]
+      const jobId=new URL(advert.url).searchParams.get('record')||employerJobKey(advert.url)?.split(':').pop()||new URL(advert.url).pathname.match(/\/(\d+)(?:\/|$)/)?.[1]
+      const sameLocalForm=new URL(advert.url).hostname==='theoldquartergroup.ie'
+        && new URL(destination.url).origin===new URL(advert.url).origin
+        && new URL(destination.url).pathname===new URL(advert.url).pathname.replace(/\/$/,'-application-form/')
       const sameJobId=jobId && (`${destination.url} ${destination.html}`).includes(jobId)
       const loginForJob=/log ?in|sign ?in|register|enter your email/i.test(target.text)&&sameJobId
-      if(!(target.inlineForm&&sameJobId) && !(target.hasAdvert&&target.title===p.title) && !loginForJob) return {...enriched,verificationReason:'Application destination did not confirm this vacancy'}
+      if(!(target.inlineForm&&(sameJobId||sameLocalForm)) && !(target.hasAdvert&&target.title===p.title) && !loginForJob) return {...enriched,verificationReason:'Application destination did not confirm this vacancy'}
     }
     return {...enriched,verificationStatus:'open',verifiedAt:checkedAt,verificationReason:'Advert and application destination checked'}
   } catch(e) {return {...fallback,verificationReason:e.message}}

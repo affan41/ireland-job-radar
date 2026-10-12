@@ -43,6 +43,7 @@ const defaults = {
   localSites: { enabled: true },
   priorityEmployers: {enabled: true},
   fashionEmployers: {enabled: true},
+  studentEmployers: {enabled: true},
   verification: {enabled: true, maxPerRefresh: 150},
   jobAlert: { enabled: true, maxPages: 15 },
   retailEmployers: { enabled: true, providers: ['primark', 'lidl', 'mcdonalds', 'supermacs', 'boots'] },

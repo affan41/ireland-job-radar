@@ -92,6 +92,7 @@ const evidenceColumns = {
   verification_status: "TEXT DEFAULT 'unverified'", verification_reason: 'TEXT',
   application_url: 'TEXT', employer_job_id: 'TEXT', hours_min: 'REAL', hours_max: 'REAL',
   hours_evidence: 'TEXT', shifts: 'TEXT', availability: 'TEXT', conflicts: 'TEXT',
+  source_metadata: 'TEXT',
   scheme: "TEXT DEFAULT 'ordinary'", location_precision: 'TEXT', title_needs_review: 'INTEGER DEFAULT 0',
   sponsorship_evidence: 'TEXT', sponsorship_source: 'TEXT', merged_into: 'TEXT',
 }
@@ -268,12 +269,12 @@ export function upsertJob(input) {
   )
   db.prepare(`UPDATE jobs SET title=?,full_description=?,closing_at=COALESCE(?,closing_at),checked_at=COALESCE(?,checked_at),
     verified_at=COALESCE(?,verified_at),verification_status=?,verification_reason=?,application_url=COALESCE(?,application_url),
-    employer_job_id=COALESCE(?,employer_job_id),hours_min=?,hours_max=?,hours_evidence=?,shifts=?,availability=?,conflicts=?,scheme=?,
+    employer_job_id=COALESCE(?,employer_job_id),hours_min=?,hours_max=?,hours_evidence=?,shifts=?,availability=?,conflicts=?,source_metadata=?,scheme=?,
     location_precision=?,title_needs_review=?,sponsorship_evidence=?,sponsorship_source=?,student_role=? WHERE id=?`).run(
     j.title,j.fullDescription||j.description||'',j.closingAt??null,j.checkedAt??null,j.verifiedAt??null,
     j.verificationStatus||'unverified',j.verificationReason||null,j.applicationUrl??null,j.employerJobId??null,
     j.hoursMin??null,j.hoursMax??null,JSON.stringify(j.hoursEvidence||[]),JSON.stringify(j.shifts||[]),
-    (j.availability||[]).join(','),JSON.stringify(j.conflicts||[]),j.scheme||'ordinary',j.locationPrecision??null,
+    (j.availability||[]).join(','),JSON.stringify(j.conflicts||[]),j.sourceMetadata||null,j.scheme||'ordinary',j.locationPrecision??null,
     j.titleNeedsReview?1:0,j.sponsorshipEvidence??null,j.sponsorshipSource??null,j.studentRole?1:0,j.id)
   upsertSourceStmt.run(j.id, j.source, j.sourceDetail ?? '', j.url, j.seenAt)
   return isNew

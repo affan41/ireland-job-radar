@@ -128,7 +128,7 @@ export const PROFILES = [
     group: 'student',
     name: 'Flexible, event and campus work',
     queries: ['part time', 'student part time', 'weekend jobs', 'evening jobs'],
-    titleTerms: ['student ambassador', 'student assistant', 'campus assistant', 'event staff', 'brand ambassador', 'cinema staff', 'leisure attendant'],
+    titleTerms: ['student ambassador', 'student assistant', 'campus assistant', 'event staff', 'brand ambassador', 'cinema staff', 'leisure attendant', 'christmas team', 'accommodation assistant'],
     partTimeOnly: true,
   },
   {
@@ -198,7 +198,7 @@ export function classify(title, description, employmentType = detectEmploymentTy
   let best = 0
 
   for (const p of COMPILED) {
-    if (p.partTimeOnly && employmentType !== 'part_time') continue
+    if (p.partTimeOnly && !['part_time', 'full_or_part_time'].includes(employmentType)) continue
     let score = 0
     for (const re of p.terms) {
       if (re.test(t)) score += 10

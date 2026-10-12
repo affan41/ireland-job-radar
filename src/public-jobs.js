@@ -6,7 +6,7 @@ export const PUBLIC_JOB_FIELDS = [
   'career_role', 'sponsorship', 'sponsorship_reasons', 'groups', 'score', 'first_seen', 'last_seen',
   'remote_student_note', 'full_description', 'closing_at', 'checked_at', 'verified_at',
   'verification_status', 'verification_reason', 'application_url', 'employer_job_id',
-  'hours_min', 'hours_max', 'hours_evidence', 'shifts', 'availability', 'conflicts', 'scheme',
+  'hours_min', 'hours_max', 'hours_evidence', 'shifts', 'availability', 'conflicts', 'source_metadata', 'scheme',
   'location_precision', 'sponsorship_evidence', 'sponsorship_source', 'original_title',
   'title_repair_note', 'student_role',
 ]

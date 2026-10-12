@@ -15,7 +15,7 @@ export const VIEWS = [
     // Unknown hours, temporary work and a student category are not evidence of
     // part-time hours. Require the classified employment type itself.
     requireAny: {
-      employmentTypes: ['part_time'],
+      employmentTypes: ['part_time', 'full_or_part_time'],
     },
     // A "Head of EMEA Fund Accounting" whose advert merely mentions part-time hours
     // somewhere is still a career post. But when an advert states plainly that the
@@ -25,15 +25,15 @@ export const VIEWS = [
     // Optional widening: shop, food, cleaning and similar jobs whose advert does
     // not state hours at all. Off unless the page asks for it.
     unstatedHours: true,
-    // Part-time adverts stay open for weeks, so the page looks further back here.
-    defaultDays: 30,
+    // An original posting date does not establish whether an advert is still open.
+    defaultDays: 0,
     note: 'Limerick, plus remote part-time roles open to people in Ireland. Use the nearby-towns option to include Shannon, Ennis and Nenagh, '
       + 'or Working pattern to see only remote. Remote leads are potential matches, not verified student eligibility: '
       + 'freelance gigs, hybrid jobs and senior roles are left out, and self-employment is not permitted on Stamp 2. '
       + 'On a Stamp 2 student permission you may work 20 hours a week during term and '
-      + '40 hours a week in the holiday periods. Adverts indicating part-time work are shown. '
+      + '40 hours a week in the holiday periods. Adverts offering part-time work are shown, including explicit full-time/part-time options; confirm the part-time contract. '
       + 'With "hours not stated" ticked, shop, food, cleaning, care and warehouse jobs that give no hours are added and tagged; '
-      + 'they may turn out to be full time, so confirm before applying. Temporary jobs are excluded. Part-time hours can still exceed 20 a week. '
+      + 'they may turn out to be full time, so confirm before applying. Temporary jobs are excluded. Jobs without weekly hours are labelled separately; use maximum 20 hours to require stated hours. Part-time hours can still exceed 20 a week. '
       + 'Check the current conditions on your own permission before you apply.',
     noteLink: {
       href: 'https://www.irishimmigration.ie/coming-to-study-in-ireland/what-are-my-options-for-studying-in-ireland/',

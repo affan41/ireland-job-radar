@@ -135,7 +135,11 @@ export function buildJob(raw, seenAt) {
   const description = clean(raw.description, 900)
   const schedule = scheduleEvidence(title, fullDescription, raw.metadata || raw.employmentType)
   const titleNeedsReview = !/[\p{L}]/u.test(title)
-  const employmentType = detectEmploymentType(title, clean(raw.description, Infinity), raw.employmentType)
+  const shortSchedule = schedule.hoursMax > 0 && schedule.hoursMax < 30
+    && !/full[\s-]*time/i.test(title) && schedule.hoursEvidence.some(h=>h.source==='metadata'||h.source==='title')
+  const employmentType = detectEmploymentType(title,
+    `${clean(raw.description, Infinity)} ${schedule.hoursEvidence.filter(h=>h.source==='metadata').map(h=>h.text).join(' ')}`,
+    shortSchedule ? 'part_time' : raw.employmentType)
   const locationRaw = clean(raw.locationRaw, 140)
 
   let region = resolveRegion(locationRaw, raw.regionHint)
@@ -144,15 +148,13 @@ export function buildJob(raw, seenAt) {
   if (region.regionKey === 'unknown' && raw.country) region = countryFallback(raw.country)
 
   let { profiles, groups, score } = classify(title, description, employmentType)
-  // Keep explicitly advertised multiple-contract opportunities in All Ireland.
-  // Their conservative employment label and conflict warning still exclude them
-  // from the Part time view; no student profile or confirmed hours are invented.
+  // Explicit multiple-contract opportunities keep their own label and warning.
   if (!score && studentRole(title) && /full[\s-]*time\s*(?:&|and|or|\/)\s*part[\s-]*time\s+(?:positions|roles|contracts)\b/i.test(fullDescription)) score = 10
 
   // Search terms establish relevance, never working hours. Student profiles
   // still require part-time evidence from the advert or the source's type field.
   const intent = (raw.intentProfiles || []).filter((id) => PROFILE_BY_ID[id]
-    && (!PROFILE_BY_ID[id].partTimeOnly || employmentType === 'part_time'))
+    && (!PROFILE_BY_ID[id].partTimeOnly || ['part_time', 'full_or_part_time'].includes(employmentType)))
   // The search intent is blunt: a Careerjet search for "part time" in Limerick
   // returns senior roles too. Do not let it vouch for a job that reads as a career
   // position, or the student categories fill up with pharmacists and planners.
@@ -195,6 +197,7 @@ export function buildJob(raw, seenAt) {
     workMode,
     remoteStudentNote,
     fullDescription,
+    sourceMetadata: raw.metadata || raw.employmentType || null,
     titleNeedsReview,
     hoursMin: schedule.hoursMin, hoursMax: schedule.hoursMax,
     hoursEvidence: schedule.hoursEvidence, shifts: schedule.shifts,
