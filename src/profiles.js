@@ -136,7 +136,7 @@ export const PROFILES = [
     group: 'student',
     name: 'Retail and shop work',
     queries: ['part time retail assistant', 'part time sales assistant', 'part time shop assistant', 'part time store assistant'],
-    titleTerms: ['retail assistant', 'sales assistant', 'shop assistant', 'store assistant', 'checkout operator', 'deli assistant', 'store team member', 'team member', 'sales advisor', 'sales adviser', 'sales associate', 'retail associate', 'beauty advisor', 'sales consultant', 'stockroom assistant', 'retail stylist', 'store colleague', 'sports advisor', 'shop floor assistant', 'pharmacy counter assistant', 'optical assistant'],
+    titleTerms: ['retail assistant', 'sales assistant', 'shop assistant', 'store assistant', 'checkout operator', 'deli assistant', 'store team member', 'team member', 'sales advisor', 'sales advsior', 'sales adviser', 'sales associate', 'retail associate', 'beauty advisor', 'sales consultant', 'stockroom assistant', 'retail stylist', 'store colleague', 'sports advisor', 'shop floor assistant', 'pharmacy counter assistant', 'optical assistant'],
     partTimeOnly: true,
   },
   {

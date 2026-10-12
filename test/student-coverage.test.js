@@ -23,9 +23,10 @@ test('Rituals uses matched requisition hours and recognises its real application
 })
 
 test('conflicting Rituals title and structured hours remain visible and source metadata survives normalisation',()=>{
- const u=ritualUrl.replace('R9482','R28302'),h=schema({title:'Christmas Sales Advisor 7.5 hours'})+component({refNumber:'R28302',hoursPerWeek:{min:0,max:16}})
+ const u=ritualUrl.replace('R9482','R28302'),h=schema({title:'Christmas Sales Advsior Brown Thomas Limerick 7.5 hours'})+component({refNumber:'R28302',hoursPerWeek:{min:0,max:16}})
  const p=parseAdvert(h,u),j=buildJob({...p,url:u},'now')
  assert.equal(j.hoursMax,16);assert.equal(j.hoursMin,0);assert.match(j.sourceMetadata,/0-16/);assert.ok(j.conflicts.length)
+ assert.ok(j.score>=10);assert.match(j.title,/Advsior/)
 })
 
 test('a short advertised schedule conflicting with full-time metadata retains a warning; unrelated full-time work stays excluded',()=>{
