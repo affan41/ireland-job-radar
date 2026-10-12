@@ -51,6 +51,9 @@ jobs:
         env:
           ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
           ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
+      - name: Refresh featured employers for code updates
+        if: github.event_name == 'push'
+        run: node --no-warnings scripts/refresh-featured-employers.js
       - run: npm run build:site
 
       # Fold the write-ahead log into the main file so the cache holds one complete database.

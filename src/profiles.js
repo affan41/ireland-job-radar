@@ -144,7 +144,7 @@ export const PROFILES = [
     group: 'student',
     name: 'Hospitality and food service',
     queries: ['part time barista', 'part time waiter', 'part time kitchen porter', 'part time catering assistant', 'part time hotel receptionist'],
-    titleTerms: ['barista', 'waiter', 'waitress', 'server', 'kitchen porter', 'catering assistant', 'food and beverage assistant', 'hotel receptionist', 'front of house', 'concierge', 'crew member', 'night porter', 'bar staff', 'waiting staff', 'cafe assistant', 'cafe associate', 'food beverage assistant', 'room attendant', 'baker', 'bakery assistant', 'restaurant staff'],
+    titleTerms: ['barista', 'waiter', 'waitress', 'server', 'kitchen porter', 'catering assistant', 'food and beverage assistant', 'hotel receptionist', 'front of house', 'concierge', 'crew member', 'night porter', 'bar staff', 'waiting staff', 'cafe assistant', 'cafe associate', 'food beverage assistant', 'room attendant', 'baker', 'bakery assistant', 'restaurant staff', 'lobby host'],
     partTimeOnly: true,
   },
   {

@@ -6,7 +6,8 @@ export function scheduleEvidence(title = '', description = '', metadata = '') {
     const text = normal(value)
     for (const m of text.matchAll(/\b(\d{1,2}(?:\.\d+)?)\s*(?:(?:-|to)\s*(\d{1,2}(?:\.\d+)?)\s*)?(?:hours?|hrs?)\s*(?:(?:per|a|each|\/)\s*(?:week|wk)|p\s*\/\s*w|weekly)?\b/gi)) {
       if (source === 'description' && !/week|\bwk\b|p\s*\/\s*w/i.test(m[0])) continue
-      hours.push({source, min: Number(m[1]), max: Number(m[2] || m[1]), text: m[0]})
+      const upperBound = /\bup to\s*$/i.test(text.slice(0, m.index))
+      hours.push({source, min: upperBound ? null : Number(m[1]), max: Number(m[2] || m[1]), text: upperBound ? `up to ${m[0]}` : m[0]})
     }
   }
   const shifts = []
@@ -30,7 +31,8 @@ export function scheduleEvidence(title = '', description = '', metadata = '') {
   if (/morning/i.test(shiftText)) patterns.push('mornings')
   if (/night/i.test(shiftText)) patterns.push('nights')
   if (/flexib|rotat|var(?:y|ied|ious)|shift pattern.*confirm/i.test(shiftText)) patterns.push('variable')
-  return { hoursMin: hours.length ? Math.min(...hours.map(h=>h.min)) : null,
+  const minimums = hours.map(h=>h.min).filter(h=>h != null)
+  return { hoursMin: minimums.length ? Math.min(...minimums) : null,
     hoursMax: hours.length ? Math.max(...hours.map(h=>h.max)) : null,
     hoursEvidence: hours, shifts: [...new Set(shifts)].slice(0,8), availability: patterns, conflicts }
 }

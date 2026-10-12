@@ -144,6 +144,10 @@ export function buildJob(raw, seenAt) {
   if (region.regionKey === 'unknown' && raw.country) region = countryFallback(raw.country)
 
   let { profiles, groups, score } = classify(title, description, employmentType)
+  // Keep explicitly advertised multiple-contract opportunities in All Ireland.
+  // Their conservative employment label and conflict warning still exclude them
+  // from the Part time view; no student profile or confirmed hours are invented.
+  if (!score && studentRole(title) && /full[\s-]*time\s*(?:&|and|or|\/)\s*part[\s-]*time\s+(?:positions|roles|contracts)\b/i.test(fullDescription)) score = 10
 
   // Search terms establish relevance, never working hours. Student profiles
   // still require part-time evidence from the advert or the source's type field.

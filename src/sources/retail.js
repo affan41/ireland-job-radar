@@ -1,6 +1,9 @@
 import { getJSON, getText, postJSON, sleep } from './http.js'
 import { clean } from '../normalise.js'
 import { isIrishLocation } from '../regions.js'
+import { load } from 'cheerio'
+import { getPublicPage } from './public-page.js'
+import { verifyAdvert } from '../verification.js'
 
 const employer = (name, job) => ({ country: 'ie', source: 'employer', sourceDetail: `${name} Careers`, company: name, ...job })
 const typeFrom = value => /full[\s_-]*time/i.test(String(value)) ? 'full_time' : /part[\s_-]*time/i.test(String(value)) ? 'part_time' : undefined
@@ -123,15 +126,32 @@ export function parseSupermacs(html, url) {
   return employer("Supermac's / The Plaza Group", { title, url, locationRaw: location, description,
     employmentType: typeFrom(value('_tag_type')), postedAt: value('job_created_at'), salaryText: value('salary') })
 }
-export async function fetchSupermacs({ text = getText } = {}) {
+export async function fetchSupermacs({ request = getPublicPage } = {}) {
   const urls = new Set()
-  for (let page = 1; page <= 10; page++) {
-    const html = await text(page === 1 ? 'https://supermacs.ie/careers/' : `https://supermacs.ie/careers/page/${page}/`)
-    for (const match of html.matchAll(/<a\b[^>]*href="(https:\/\/supermacs\.ie\/job\/[^"?]+)"[^>]*class="wpjb-job_title[^>]*>/g)) urls.add(match[1])
-    if (!html.includes('class="next page-numbers"')) break
+  const queue = ['https://supermacs.ie/careers/'], seen = new Set()
+  while (queue.length && seen.size < 10) {
+    const url = queue.shift()
+    if (seen.has(url)) continue
+    seen.add(url)
+    const page = await request(url)
+    if (page.status !== 200) throw new Error(`Vacancy search HTTP ${page.status}`)
+    const $ = load(page.html)
+    $('a.wpjb-job_title[href], a.page-numbers[href]').each((i, e) => {
+      const next = new URL($(e).attr('href'), page.url)
+      if (next.origin !== 'https://supermacs.ie') return
+      if (next.pathname.startsWith('/job/')) urls.add(next.href)
+      if (/^\/careers\/page\/\d+\/$/.test(next.pathname) && !seen.has(next.href)) queue.push(next.href)
+    })
   }
   if (!urls.size) throw new Error('Vacancy links missing')
-  return details([...urls].map(url => ({ url })), async ({ url }) => parseSupermacs(await text(url), url))
+  const result = await details([...urls].map(url => ({ url })), async ({ url }) => {
+    const page = await request(url)
+    if (page.status !== 200) throw new Error(`Advert HTTP ${page.status}`)
+    const raw = parseSupermacs(page.html, page.url)
+    return raw ? verifyAdvert(raw, { page, request }) : null
+  })
+  if (queue.some(url => !seen.has(url))) result.errors.push('Supermacs discovery capped at 10 pages')
+  return result
 }
 
 async function postForm(url, body) {

@@ -125,7 +125,7 @@ const SOURCE_LABELS = {
 }
 
 const place = (j) => j.location_raw || j.county_name || ''
-const hoursText = (j) => `${j.hours_min == null || j.hours_min === j.hours_max ? j.hours_max : `${j.hours_min}–${j.hours_max}`} h/week`
+const hoursText = (j) => `${j.hours_min == null ? `Up to ${j.hours_max}` : j.hours_min === j.hours_max ? j.hours_max : `${j.hours_min}–${j.hours_max}`} h/week`
 const isNew = (j) => j.first_seen && Date.now() - new Date(j.first_seen).getTime() < 86400000
 const hoursUnstated = (j) => j.hours_max == null && j.student_role && j.employment_type === 'unspecified'
 

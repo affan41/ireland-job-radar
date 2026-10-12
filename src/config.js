@@ -42,6 +42,7 @@ const defaults = {
   tesco: { enabled: true, maxPages: 20 },
   localSites: { enabled: true },
   priorityEmployers: {enabled: true},
+  fashionEmployers: {enabled: true},
   verification: {enabled: true, maxPerRefresh: 150},
   jobAlert: { enabled: true, maxPages: 15 },
   retailEmployers: { enabled: true, providers: ['primark', 'lidl', 'mcdonalds', 'supermacs', 'boots'] },

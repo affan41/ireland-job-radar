@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { mapLidl, mapMcDonalds, mapPrimark, parseBoots, parseBootsCards, parseSupermacs, fetchLidl, fetchMcDonalds } from '../src/sources/retail.js'
+import { mapLidl, mapMcDonalds, mapPrimark, parseBoots, parseBootsCards, parseSupermacs, fetchLidl, fetchMcDonalds, fetchSupermacs } from '../src/sources/retail.js'
 import { buildJob } from '../src/normalise.js'
 
 const build = raw => buildJob(raw, '2026-09-19T20:00:00Z')
@@ -55,4 +55,25 @@ test('Lidl follows pagination and McDonalds refreshes public search configuratio
   } })
   assert.equal(calls, 1)
   assert.deepEqual(result.jobs, [])
+})
+
+test('Supermacs follows numbered pagination and retains a mixed-contract lobby host with its warning', async () => {
+  const origin = 'https://supermacs.ie', detail = origin + '/job/lobby-host/'
+  const html = '<h1>Lobby Host ¦ Ballysimon Limerick</h1><div class="wpjb wpjb-job wpjb-page-single"><div class="wpjb-row-meta-_location"><div class="wpjb-col-60">Ballysimon, Co. Limerick, Ireland</div></div><div class="wpjb-text"><p>Full-Time &amp; Part-Time Positions.</p></div><div class="wpjb-job-apply"><form><input type="file"></form></div></div>'
+  const calls = []
+  const r = await fetchSupermacs({ request: async url => {
+    calls.push(url)
+    return { url, status: 200, html: url === detail ? html : `<a class="wpjb-job_title wpjb-title" href="${detail}">Lobby Host</a><a class="page-numbers" href="${origin}/careers/page/2/">2</a><a class="wpjb-job_title" href="https://other.test/job/1">Other</a>` }
+  } })
+  assert.equal(calls.filter(u => u.includes('/careers/')).length, 2)
+  assert.equal(r.jobs.length, 1)
+  assert.equal(r.jobs[0].verificationStatus, 'open')
+  const job = build(r.jobs[0])
+  assert.equal(job.studentRole, 1)
+  assert.equal(job.score, 10)
+  assert.equal(job.employmentType, 'full_time')
+  assert.deepEqual(job.groups, [])
+  assert.equal(job.hoursMax, null)
+  assert.ok(job.conflicts.length)
+  assert.equal(build({ title: 'Lobby Host', url: detail, description: 'Full-Time position, 39 hours per week.' }).score, 0)
 })

@@ -66,6 +66,7 @@ over aggregator redirects, and the card shows when another source also carries i
 | Local employer sites | No | Current adverts linked from The Old Quarter Group careers page, covering the townhouse, pub, Fordes Courtyard and The Top House |
 | JobAlert.ie | No | The paginated Limerick part-time search, with open/expired status and actual employment types checked |
 | Primark, Lidl, McDonald's, Supermac's and Boots | No | Official public vacancy feeds and full adverts, with contract types, hours and available workplace coordinates |
+| BESTSELLER / VILA and Søstrene Grene | No | Irish vacancies from the employers' public careers feed and search pages, with full advert text, stated hours and closing dates |
 | Tesco Ireland | No | Official Irish store adverts, with contract hours read from each live vacancy page and expired adverts excluded |
 | ACCA Careers | No | Finance and accountancy vacancies from ACCA's official careers board, searched directly for Ireland |
 | JobsIreland | No | Independent vacancies from the Irish government's Department of Social Protection service, including its complete current part-time search |
@@ -115,6 +116,12 @@ Explicit full-time titles, full-time source fields and weekly hours of 30 or mor
 are excluded. Mixed full-time/part-time descriptions are excluded unless the title
 specifically identifies a part-time vacancy. Part-time jobs can still require more
 than 20 hours per week, so check the actual schedule before applying.
+
+Adverts explicitly offering both full-time and part-time positions, such as
+Supermac's Lobby Host roles, are retained in All Ireland with a contract warning.
+They remain excluded from the Part time view until a specific part-time contract
+is confirmed. Employer application paths blocked by robots rules stay unverified;
+the reader does not bypass those restrictions.
 
 The bar under the tab carries the hours you are allowed: 20 a week during term and
 40 a week in the holiday periods on Stamp 2. That is a reminder, not legal advice.

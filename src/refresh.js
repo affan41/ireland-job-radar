@@ -17,6 +17,7 @@ import { fetchTesco } from './sources/tesco.js'
 import { fetchLocalSites } from './sources/local-sites.js'
 import { fetchJobAlert } from './sources/jobalert.js'
 import { fetchRetailEmployers } from './sources/retail.js'
+import { fetchBestseller, fetchSostreneGrene } from './sources/fashion.js'
 
 let running = false
 let progress = { active: false, step: '', log: [] }
@@ -44,6 +45,12 @@ export async function runRefresh({ quiet = false, requestContext } = {}) {
   const collected = []
 
   try {
+    if (config.fashionEmployers?.enabled) {
+      for (const [name, collect] of [['BESTSELLER', fetchBestseller], ['Søstrene Grene', fetchSostreneGrene]]) {
+        try { const r = await collect({ onProgress: note }); collected.push(...r.jobs); errors.push(...r.errors) }
+        catch (error) { errors.push(`${name}: ${error.message}`) }
+      }
+    }
     if(config.priorityEmployers?.enabled){
       note('Direct employer adverts and application destinations')
       const r=await fetchPriorityEmployers({onProgress:note});collected.push(...r.jobs);errors.push(...r.errors)

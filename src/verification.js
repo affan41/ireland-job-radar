@@ -14,19 +14,26 @@ export function parseAdvert(html,url) {
   const collect=o=>{if(!o||typeof o!=='object')return;if(Array.isArray(o))return o.forEach(collect);if([o['@type']].flat().includes('JobPosting'))schemas.push(o);if(o['@graph'])collect(o['@graph'])}
   $('script[type="application/ld+json"]').each((i,e)=>{try{collect(JSON.parse($(e).text()))}catch{}})
   const ld=schemas[0]||{}
+  const micro=$('[itemscope][itemtype$="/JobPosting"]').first()
+  const prop=name=>{const e=micro.find(`[itemprop="${name}"]`).first();return tidy(e.attr('content')||e.text())}
+  const microDescription=micro.find('[itemprop="description"]').first().html()
+  const wpjob=$('.wpjb-job').first()
   $('script,style,noscript,nav,footer').remove()
   $('br').replaceWith('\n');$('p,li,div,h1,h2,h3').append('\n')
   const text=$('body').text().replace(/[ \t]+/g,' ').replace(/\n\s*\n/g,'\n').trim()
-  const title=tidy(ld.title)||tidy($('h1').last().text())
+  const title=tidy(ld.title)||prop('title')||tidy($('h1').last().text())
   const fields={}
   $('.job_details_table .row').each((i,e)=>{const parts=$(e).children().map((i,c)=>tidy($(c).text())).get();if(parts.length>=2)fields[parts[0].replace(/:$/,'').toLowerCase()]=parts.slice(1).join(' ')})
   const place=[ld.jobLocation].flat().filter(Boolean)[0]||{}, address=place.address||{}
   const country=typeof address.addressCountry==='object'?address.addressCountry.name:address.addressCountry
-  const location=[address.streetAddress,address.addressLocality,address.addressRegion,address.postalCode,country].filter(Boolean).join(', ')||fields.location||''
-  const detail=load(ld.description||'');detail('br').replaceWith('\n');detail('p,li,div').append('\n')
-  const description=ld.description ? detail('body').text() : ($('.job-advert-content').text()||text)
-  const closingAt=dateValue(ld.validThrough||fields['closing date'])
+  const wpfield=name=>tidy(wpjob.find(`.wpjb-row-meta-${name} .wpjb-col-60`).text())
+  const location=[address.streetAddress,address.addressLocality,address.addressRegion,address.postalCode,country].filter(Boolean).join(', ')||prop('streetAddress')||fields.location||wpfield('_location')||''
+  const descriptionHtml=ld.description||microDescription||wpjob.find('.wpjb-text').first().html()
+  const detail=load(descriptionHtml||'');detail('br').replaceWith('\n');detail('p,li,div').append('\n')
+  const description=descriptionHtml ? detail('body').text() : ($('.job-advert-content').text()||text)
+  const closingAt=dateValue(ld.validThrough||prop('validThrough')||fields['closing date'])
   const apply=$('a[href]').filter((i,e)=>/^(?:apply|apply now|apply for this job|apply for this role)\b/i.test(tidy($(e).text()))).first().attr('href')
+    || (new URL(url).hostname==='bestseller.com' ? micro.find('aside-job-details').attr('applylink') : null)
   let applicationUrl=null
   try{if(apply)applicationUrl=new URL(apply,url).href}catch{}
   // Sally's public careers page loads this read-only login fragment, using the
@@ -37,10 +44,11 @@ export function parseAdvert(html,url) {
   const inlineForm=$('form input[type="file"]').length>0
   if(inlineForm)applicationUrl=url
   const closed=/\b(?:this (?:job|vacancy|position|advert) (?:is |has (?:now )?been )?(?:now )?(?:closed|expired|filled)|no longer accepting applications|job (?:not found|has expired)|vacancy (?:not found|has expired))\b/i.test(text)
-  return {title,description,locationRaw:location,company:ld.hiringOrganization?.name,
-    postedAt:dateValue(ld.datePosted),closingAt,metadata:[ld.employmentType,fields['contract type'],fields['working hours']].flat().filter(Boolean).join(' '),
-    employmentType:/full[_ -]?time/i.test(ld.employmentType||fields['contract type']||'')?'full_time':/part[_ -]?time/i.test(ld.employmentType||fields['contract type']||'')?'part_time':undefined,
-    applicationUrl,inlineForm,closed,text,hasAdvert:Boolean((ld.title&&ld.description)||($('.job-advert-content').length&&title)||(/theoldquartergroup\.ie/.test(url)&&title&&/Employment type:/i.test(text))),
+  const contract=ld.employmentType||prop('employmentType')||fields['contract type']||wpfield('_tag_type')||''
+  return {title,description,locationRaw:location,company:ld.hiringOrganization?.name||prop('hiringOrganization')||undefined,
+    postedAt:dateValue(ld.datePosted||prop('datePosted')||wpfield('job_created_at')),closingAt,metadata:[contract,fields['working hours']].flat().filter(Boolean).join(' '),
+    employmentType:/full[_ -]?time/i.test(contract)?'full_time':/part[_ -]?time/i.test(contract)?'part_time':undefined,
+    applicationUrl,inlineForm,closed,text,hasAdvert:Boolean((ld.title&&ld.description)||(micro.length&&prop('title')&&microDescription)||(wpjob.length&&title&&wpjob.find('.wpjb-text').length)||($('.job-advert-content').length&&title)||(/theoldquartergroup\.ie/.test(url)&&title&&/Employment type:/i.test(text))),
     latitude:address.streetAddress?Number(place.geo?.latitude)||null:null,longitude:address.streetAddress?Number(place.geo?.longitude)||null:null,
     locationPrecision:address.streetAddress?'workplace':null,
     employerJobId:String(ld.identifier?.value||employerJobKey(url)||''),
