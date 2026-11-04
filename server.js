@@ -93,7 +93,7 @@ const server = createServer(async (req, res) => {
         regions: allRegions().filter(r => !r.country || r.country === 'ie'),
         provinceOrder: PROVINCE_ORDER.filter(p => !['Cyprus','Malta'].includes(p)),
         countries: COUNTRIES.filter(c => c.code === 'ie').map((c) => ({ code: c.code, name: c.name, provinces: c.provinces })),
-        views: VIEWS.map((v) => ({ key: v.key, name: v.name, country: v.country, note: v.note, noteLink: v.noteLink, defaultDays: v.defaultDays, unstatedHours: Boolean(v.unstatedHours) })),
+        views: VIEWS.map((v) => ({ key: v.key, name: v.name, country: v.country, note: v.note, noteLink: v.noteLink, defaultDays: v.defaultDays, defaultSort: v.defaultSort, unstatedHours: Boolean(v.unstatedHours) })),
         sponsorshipLevels: SPONSORSHIP_LEVELS,
         permitNotes: {ie: PERMIT_NOTES.ie},
         groups: GROUPS,
@@ -116,7 +116,7 @@ const server = createServer(async (req, res) => {
       if (!summary.configured) return json(res, { available: false, profile: summary, guidance: GUIDANCE })
       const p = url.searchParams
       const { rows, counts } = remoteFitList(remoteCandidates(), profile, {
-        scope: p.get('scope') || 'region', label: p.get('label') || '', savedOnly: p.get('saved') === '1', q: p.get('q') || '',
+        scope: p.get('scope') || 'region', label: p.get('label') || '', savedOnly: p.get('saved') === '1', q: p.get('q') || '', sort: p.get('sort') || 'visa',
       })
       return json(res, { available: true, profile: summary, guidance: GUIDANCE, counts, total: rows.length, rows: rows.slice(0, 200).map((r) => fitRow(r, { includeSaved: true })) })
     }

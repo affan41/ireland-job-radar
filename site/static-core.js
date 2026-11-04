@@ -98,7 +98,17 @@ export function createStore({ jobs, views = [], saved = new Set(), hidden = new 
     })
   }
 
+  // Mirrors VISA_RANK in src/db.js.
+  const visaRank = (r) => {
+    const type = r.employment_type || 'unspecified'
+    const conflicts = r.conflicts && r.conflicts !== '[]'
+    return ({ part_time: 0, full_or_part_time: 2, unspecified: 3, temporary: 3 }[type] ?? 6)
+      + (r.hours_max != null && r.hours_max <= 20 ? 0 : r.hours_max == null ? 2 : 5)
+      + (conflicts ? 2 : 0)
+      + (/freelanc|contractor/i.test(r.title || '') ? 6 : 0)
+  }
   const SORTS = {
+    visa: (a, b) => visaRank(a) - visaRank(b) || b.score - a.score || SORTS.newest(a, b),
     newest: (a, b) => (posted(b) > posted(a) ? 1 : posted(b) < posted(a) ? -1 : 0),
     found: (a, b) => (b.first_seen > a.first_seen ? 1 : b.first_seen < a.first_seen ? -1 : 0),
     salary: (a, b) => (b.salary_max ?? b.salary_min ?? 0) - (a.salary_max ?? a.salary_min ?? 0) || SORTS.newest(a, b),

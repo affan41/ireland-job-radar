@@ -301,7 +301,16 @@ export function recentRuns(n = 10) {
   return db.prepare('SELECT * FROM runs ORDER BY id DESC LIMIT ?').all(n)
 }
 
+// Visa fit for a Stamp 2 student: stated part-time work of 20 hours or fewer
+// first; unknown hours, mixed contracts and conflicting details after; full-time,
+// contract and freelance work last. site/static-core.js mirrors this order.
+const VISA_RANK = `((CASE COALESCE(j.employment_type, 'unspecified') WHEN 'part_time' THEN 0 WHEN 'full_or_part_time' THEN 2 WHEN 'unspecified' THEN 3 WHEN 'temporary' THEN 3 ELSE 6 END)
+  + (CASE WHEN j.hours_max IS NOT NULL AND j.hours_max <= 20 THEN 0 WHEN j.hours_max IS NULL THEN 2 ELSE 5 END)
+  + (CASE WHEN COALESCE(j.conflicts, '[]') = '[]' THEN 0 ELSE 2 END)
+  + (CASE WHEN lower(j.title) LIKE '%freelanc%' OR lower(j.title) LIKE '%contractor%' THEN 6 ELSE 0 END))`
+
 const SORTS = {
+  visa: `${VISA_RANK} ASC, j.score DESC, COALESCE(j.posted_at, j.first_seen) DESC`,
   newest: 'COALESCE(j.posted_at, j.first_seen) DESC',
   found: 'j.first_seen DESC',
   salary: 'COALESCE(j.salary_max, j.salary_min, 0) DESC, COALESCE(j.posted_at, j.first_seen) DESC',

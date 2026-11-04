@@ -487,6 +487,9 @@ function switchView(key) {
   if (leaving?.defaultDays != null && state.days === String(leaving.defaultDays)) state.days = DEFAULTS.days
   const entering = views.find((v) => v.key === key)
   if (entering?.defaultDays != null && state.days === DEFAULTS.days) state.days = String(entering.defaultDays)
+  // Student views open sorted by visa fit; undo that on leaving.
+  if (leaving?.defaultSort && state.sort === leaving.defaultSort) state.sort = 'newest'
+  if (entering?.defaultSort && state.sort === 'newest') state.sort = entering.defaultSort
   state.view = key
   // The view decides the geography, so a leftover county filter would fight it.
   state.regions.clear()

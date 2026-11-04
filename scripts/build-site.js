@@ -95,7 +95,7 @@ writeFileSync(join(DIST, 'data', 'meta.json'), JSON.stringify({
   regions: allRegions().filter((r) => !r.country || r.country === 'ie'),
   provinceOrder: PROVINCE_ORDER.filter((p) => !['Cyprus', 'Malta'].includes(p)),
   countries: COUNTRIES.filter((c) => c.code === 'ie').map((c) => ({ code: c.code, name: c.name })),
-  views: VIEWS.map((v) => ({ key: v.key, name: v.name, country: v.country, note: v.note, noteLink: v.noteLink, defaultDays: v.defaultDays, unstatedHours: Boolean(v.unstatedHours) })),
+  views: VIEWS.map((v) => ({ key: v.key, name: v.name, country: v.country, note: v.note, noteLink: v.noteLink, defaultDays: v.defaultDays, defaultSort: v.defaultSort, unstatedHours: Boolean(v.unstatedHours) })),
   sponsorshipLevels: SPONSORSHIP_LEVELS,
   permitNotes: { ie: PERMIT_NOTES.ie },
   groups: GROUPS,

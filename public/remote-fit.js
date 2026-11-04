@@ -6,7 +6,7 @@ const $ = (s) => document.querySelector(s)
 const PUBLIC = document.querySelector('meta[name="oneless-mode"]')?.content === 'public'
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
 
-const state = { q: '', scope: 'region', label: '', saved: false }
+const state = { q: '', scope: 'region', label: '', saved: false, sort: 'visa' }
 try { Object.assign(state, JSON.parse(localStorage.getItem('oneless.remote-fit') || '{}')) } catch {}
 
 const STATUS = {
@@ -104,6 +104,14 @@ async function publicData() {
     if (state.label && r.fit.label !== state.label) continue
     out.push(row)
   }
+  const when = (r) => String(r.posted_at || r.first_seen || '')
+  const newest = (a, b) => when(b).localeCompare(when(a))
+  const sorts = {
+    visa: (a, b) => b.fit.visaScore - a.fit.visaScore || b.fit.roles.score - a.fit.roles.score || newest(a, b),
+    role: (a, b) => b.fit.roles.score - a.fit.roles.score || b.fit.visaScore - a.fit.visaScore || newest(a, b),
+    newest,
+  }
+  out.sort(sorts[state.sort] || sorts.visa)
   return { available: true, profile: { configured: true }, guidance: all.guidance, counts, total: out.length, rows: out.slice(0, 200) }
 }
 
@@ -115,7 +123,7 @@ async function load() {
     $('#count').textContent = 'Remote jobs could not be loaded. Try again later.'
     return
   }
-  const p = new URLSearchParams({ scope: state.scope })
+  const p = new URLSearchParams({ scope: state.scope, sort: state.sort })
   if (state.label) p.set('label', state.label)
   if (state.q) p.set('q', state.q)
   if (state.saved) p.set('saved', '1')
@@ -148,12 +156,14 @@ function bind() {
   $('#q').value = state.q
   $('#scope').value = state.scope
   $('#label').value = state.label
+  $('#sort').value = state.sort
   $('#saved').classList.toggle('on', state.saved)
   $('#saved').setAttribute('aria-pressed', String(state.saved))
   let t
   $('#q').addEventListener('input', (e) => { clearTimeout(t); t = setTimeout(() => { state.q = e.target.value.trim(); load() }, 250) })
   $('#scope').addEventListener('change', (e) => { state.scope = e.target.value; load() })
   $('#label').addEventListener('change', (e) => { state.label = e.target.value; load() })
+  $('#sort').addEventListener('change', (e) => { state.sort = e.target.value; load() })
   $('#saved').addEventListener('click', () => {
     state.saved = !state.saved
     $('#saved').classList.toggle('on', state.saved)

@@ -27,6 +27,7 @@ export const VIEWS = [
     unstatedHours: true,
     // An original posting date does not establish whether an advert is still open.
     defaultDays: 0,
+    defaultSort: 'visa',
     note: 'Limerick, plus remote part-time roles open to people in Ireland. Use the nearby-towns option to include Shannon, Ennis and Nenagh, '
       + 'or Working pattern to see only remote. Remote leads are potential matches, not verified student eligibility: '
       + 'freelance gigs, hybrid jobs and senior roles are left out, and self-employment is not permitted on Stamp 2. '
@@ -52,6 +53,7 @@ export const VIEWS = [
       employmentTypes: ['part_time', 'full_or_part_time'],
     },
     defaultDays: 0,
+    defaultSort: 'visa',
     note: 'Remote part-time adverts you could do from Ireland. The advert must say it is part-time and name Ireland or a Europe-wide or worldwide area; '
       + 'remote work tied to another country, full-time, contract and self-employed work are left out. A Europe-wide or worldwide label does not prove the employer can employ someone living in Ireland, so confirm it. '
       + 'On a Stamp 2 student permission you may work 20 hours a week during term and 40 hours a week in June to September and 15 December to 15 January, as an employee only. '

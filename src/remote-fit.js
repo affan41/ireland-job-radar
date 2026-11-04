@@ -186,6 +186,8 @@ function employmentCheck(job, text, rules) {
   const employee = sentence(text, EMPLOYEE)
   const rule = rules?.employment || 'Confirm the role is employment allowed by your permission.'
   if (self) return check('employment', 'Employee, not self-employed', rules ? 'conflict' : 'needs_verification', self, rule)
+  const unpaid = sentence(text, /\b(?:unpaid|no salary|without pay|voluntary|volunteer)\b/i)
+  if (unpaid) return check('employment', 'Employee, not self-employed', 'needs_verification', unpaid, `Unpaid or voluntary work is not clearly employment. ${rule}`)
   if (job.employment_type === 'contract') return check('employment', 'Employee, not self-employed', 'needs_verification', `Listed as a contract role${employee ? `: ${employee}` : ''}`, `${rule} Confirm you would be an employee on payroll, not a contractor.`)
   if (employee && rules) return check('employment', 'Employee, not self-employed', 'ok', employee, rule)
   return check('employment', 'Employee, not self-employed', 'needs_verification', employee, `The advert does not clearly say you would be an employee. ${rule}`)
@@ -270,15 +272,34 @@ export function assessRemoteFit(job, profile, { now = Date.now() } = {}) {
   ]
   const label = checks.some((c) => c.status === 'conflict') ? 'conflict'
     : checks.every((c) => c.status === 'ok') ? 'no_conflict_found' : 'needs_verification'
-  return { label, labelText: LABELS[label], ireland: ireland.status, roles, checks }
+  // Visa fit: how far the advert's own wording supports the permission
+  // conditions. Conflicts sink, then more supported checks rise.
+  // Hours and employee status matter most for Stamp 2, so they weigh most.
+  const WEIGHT = { hours: 30, employment: 15, location: 15, rtw: 10, payroll: 10, permission: 5 }
+  const ok = checks.reduce((n, c) => n + (c.status === 'ok' ? WEIGHT[c.key] : 0), 0)
+  // Unknown hours: a stated part-time contract is a good sign, anything else is not.
+  const hoursUnknown = checks.find((c) => c.key === 'hours').status === 'needs_verification'
+  const partTimeNoHours = !hoursUnknown ? 0 : ({ part_time: 15, full_or_part_time: 5 }[job.employment_type] ?? -10)
+  const conflicts = checks.filter((c) => c.status === 'conflict').length
+  const visaScore = (label === 'conflict' ? 0 : label === 'needs_verification' ? 100 : 200) + ok + partTimeNoHours - conflicts * 5
+  return { label, labelText: LABELS[label], ireland: ireland.status, roles, checks, visaScore }
 }
 
-const LABEL_ORDER = { no_conflict_found: 0, needs_verification: 1, conflict: 2 }
 export const IRELAND_SCOPES = { ireland: ['stated'], region: ['stated', 'region'], all: ['stated', 'region', 'unknown'] }
 
 // Filters and orders assessed jobs. Adverts tied to another country are counted
 // and left out: "remote" there does not mean remote from Ireland.
-export function remoteFitList(jobs, profile, { scope = 'region', label = '', savedOnly = false, q = '', now = Date.now() } = {}) {
+export const FIT_SORTS = {
+  visa: (a, b) => b.fit.visaScore - a.fit.visaScore || b.fit.roles.score - a.fit.roles.score || newest(a, b),
+  role: (a, b) => b.fit.roles.score - a.fit.roles.score || b.fit.visaScore - a.fit.visaScore || newest(a, b),
+  newest: (a, b) => newest(a, b),
+}
+function newest(a, b) {
+  const when = (r) => String((r.job || r).posted_at || (r.job || r).first_seen || '')
+  return when(b).localeCompare(when(a))
+}
+
+export function remoteFitList(jobs, profile, { scope = 'region', label = '', savedOnly = false, q = '', sort = 'visa', now = Date.now() } = {}) {
   const allowed = IRELAND_SCOPES[scope] || IRELAND_SCOPES.region
   const counts = { matched: 0, otherCountry: 0, outOfScope: 0, byLabel: { no_conflict_found: 0, needs_verification: 0, conflict: 0 } }
   const rows = []
@@ -295,9 +316,7 @@ export function remoteFitList(jobs, profile, { scope = 'region', label = '', sav
     if (label && fit.label !== label) continue
     rows.push({ job, fit })
   }
-  rows.sort((a, b) => LABEL_ORDER[a.fit.label] - LABEL_ORDER[b.fit.label]
-    || b.fit.roles.score - a.fit.roles.score
-    || String(b.job.posted_at || b.job.first_seen || '').localeCompare(String(a.job.posted_at || a.job.first_seen || '')))
+  rows.sort(FIT_SORTS[sort] || FIT_SORTS.visa)
   return { rows, counts }
 }
 
@@ -308,15 +327,15 @@ export function remoteFitList(jobs, profile, { scope = 'region', label = '', sav
 export const PUBLIC_PROFILE = {
   public: true,
   roles: [
-    { id: 'accounts', name: 'Accounts and bookkeeping', titleTerms: ['bookkeeper', 'bookkeeping', 'book-keeper', 'accounts assistant', 'accounts administrator', 'accounts clerk', 'accounts officer', 'accounts payable', 'accounts receivable', 'AP clerk', 'AR clerk', 'AP specialist', 'AR specialist', 'purchase ledger', 'sales ledger', 'credit controller', 'credit control', 'accounting assistant', 'accounts technician', 'accounting technician', 'finance assistant', 'finance administrator', 'finance officer', 'junior accountant', 'assistant accountant', 'accountant', 'reconciliation', 'reconciliations', 'payroll assistant', 'payroll administrator', 'billing specialist', 'billing assistant'] },
-    { id: 'finance', name: 'Finance and reporting', titleTerms: ['financial analyst', 'finance analyst', 'FP&A', 'management accountant', 'management accounts', 'financial reporting', 'finance reporting', 'VAT', 'tax assistant', 'tax associate', 'finance operations', 'treasury analyst', 'cost analyst', 'commercial analyst'] },
-    { id: 'data', name: 'Data and analytics', titleTerms: ['data analyst', 'data analytics', 'analytics', 'business analyst', 'BI analyst', 'business intelligence', 'Power BI', 'reporting analyst', 'insights analyst', 'statistician', 'statistics', 'data quality', 'data entry', 'database', 'SQL', 'research assistant'] },
-    { id: 'projects', name: 'Project coordination', titleTerms: ['project coordinator', 'project co-ordinator', 'project administrator', 'project assistant', 'project support', 'PMO', 'project analyst', 'project controls'] },
-    { id: 'systems', name: 'Finance systems and software', titleTerms: ['Xero', 'QuickBooks', 'Sage', 'Odoo', 'ERP', 'NetSuite', 'finance systems', 'accounting software'] },
+    { id: 'analytics', name: 'Business analytics and data', titleTerms: ["data analyst", "data analytics", "analytics", "business analyst", "business analytics", "BI analyst", "business intelligence", "Power BI", "Tableau", "reporting analyst", "insights analyst", "product analyst", "operations analyst", "marketing analyst", "research analyst", "statistician", "statistics", "data science", "data scientist", "data engineer", "data quality", "data entry", "database", "SQL", "research assistant"] },
+    { id: 'ai', name: 'AI roles', titleTerms: ["AI", "artificial intelligence", "machine learning", "ML", "LLM", "GenAI", "generative AI", "prompt", "AI trainer", "AI tutor", "annotation", "annotator", "data labelling", "data labeling", "model evaluation", "evaluator", "NLP", "deep learning"] },
+    { id: 'intern', name: 'Internships and graduate roles', titleTerms: ["intern", "internship", "placement", "graduate programme", "graduate program", "graduate analyst", "trainee", "summer analyst", "junior analyst"] },
+    { id: 'projects', name: 'Project coordination', titleTerms: ["project coordinator", "project co-ordinator", "project administrator", "project assistant", "project support", "PMO", "project analyst", "project controls"] },
+    { id: 'finance', name: 'Finance and accounts', titleTerms: ["bookkeeper", "bookkeeping", "accounts assistant", "accounts payable", "accounts receivable", "purchase ledger", "credit control", "accounting assistant", "accounting technician", "accounts technician", "finance assistant", "finance officer", "junior accountant", "assistant accountant", "accountant", "reconciliation", "payroll assistant", "financial analyst", "finance analyst", "FP&A", "management accountant", "financial reporting", "VAT", "tax assistant", "finance operations", "commercial analyst", "Xero", "QuickBooks", "ERP", "finance systems", "accounting software"] },
   ],
-  skills: ['Xero', 'QuickBooks', 'Sage', 'Excel', 'SQL', 'Power BI', 'IFRS', 'VAT', 'reconciliation', 'bookkeeping', 'cash flow', 'forecasting', 'statistics', 'database', 'analytics', 'project management'],
+  skills: ["SQL", "Python", "Power BI", "Tableau", "Excel", "statistics", "statistical", "regression", "machine learning", "database", "databases", "analytics", "dashboard", "dashboards", "data visualisation", "data visualization", "project management", "AI", "LLM", "prompt", "Xero", "QuickBooks", "VAT", "reconciliation", "IFRS", "forecasting"],
   seniorTitleTerms: ['senior', 'lead', 'manager'],
-  excludeTitleTerms: ['head of', 'director', 'vice president', 'VP', 'chief', 'principal', 'partner', 'engineer', 'account executive', 'sales'],
+  excludeTitleTerms: ["head of", "director", "vice president", "VP", "chief", "principal", "partner", "account executive", "sales"],
   permission: { stamp: '2', standard: true },
 }
 

@@ -176,3 +176,29 @@ test('Remote part time tab keeps Ireland-workable employee adverts only', () => 
     assert.ok(['part_time', 'full_or_part_time'].includes(j.employment_type), j.title)
   }
 })
+
+test('visa fit sorting puts advert-supported Stamp 2 work first and conflicts last', () => {
+  const jobs = [
+    { ...good, id: 'full', title: 'Full-time Bookkeeper', employment_type: 'full_time' },
+    { ...good, id: 'thin', full_description: 'Part-time, remote from Ireland.' },
+    { ...good, id: 'best' },
+  ]
+  const ids = (sort) => remoteFitList(jobs, withStamp('2'), { now: NOW, scope: 'all', sort }).rows.map((r) => r.job.id)
+  assert.deepEqual(ids('visa'), ['best', 'thin', 'full'])
+  assert.equal(statusOf(fit({ full_description: `${good.full_description} This is an unpaid internship.` }), 'employment'), 'needs_verification')
+})
+
+test('public roles cover analytics, AI and internships, not only finance', () => {
+  const role = (title) => roleMatch({ ...good, title }, PUBLIC_PROFILE)?.families.map((f) => f.id)
+  assert.deepEqual(role('Data Analyst Intern'), ['analytics', 'intern'])
+  assert.deepEqual(role('AI Trainer (Part-time)'), ['ai'])
+  assert.deepEqual(role('Machine Learning Engineer Internship'), ['ai', 'intern'])
+  assert.deepEqual(role('Graduate Programme 2027'), ['intern'])
+  assert.equal(role('Head of AI'), undefined)
+})
+
+test('main list visa sort ranks stated short part-time hours above unknown or full-time', () => {
+  const { rows } = queryJobs({ view: 'limerick-pt', countries: ['ie'], includeUnstated: true, sort: 'visa', limit: 300 })
+  const rank = (j) => (j.employment_type === 'part_time' ? 0 : 1) + (j.hours_max != null && j.hours_max <= 20 ? 0 : 1)
+  for (let i = 1; i < rows.length; i++) if (rank(rows[i - 1]) > rank(rows[i]) + 1) assert.fail(`${rows[i - 1].title} before ${rows[i].title}`)
+})

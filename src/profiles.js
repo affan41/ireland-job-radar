@@ -12,6 +12,7 @@ export const GROUPS = [
   { key: 'financeops', name: 'Finance operations' },
   { key: 'it', name: 'IT and software' },
   { key: 'ai', name: 'AI and data' },
+  { key: 'intern', name: 'Internships and graduate roles' },
   { key: 'student', name: 'Student part-time jobs' },
 ]
 
@@ -118,6 +119,27 @@ export const PROFILES = [
     name: 'Data science and analytics',
     queries: ['data scientist', 'data analyst', 'data engineer', 'analytics engineer'],
     titleTerms: ['data scientist', 'data analyst', 'data engineer', 'analytics', 'bi developer', 'power bi'],
+  },
+  {
+    id: 'analytics',
+    group: 'ai',
+    name: 'Business analytics and insights',
+    queries: ['business analytics', 'junior data analyst', 'insights analyst', 'BI analyst', 'reporting analyst', 'product analyst'],
+    titleTerms: ['business analytics', 'business intelligence', 'bi analyst', 'insights analyst', 'reporting analyst', 'product analyst', 'operations analyst', 'marketing analyst', 'research analyst', 'tableau', 'data science', 'statistician'],
+  },
+  {
+    id: 'aiwork',
+    group: 'ai',
+    name: 'AI training, data and evaluation',
+    queries: ['AI trainer', 'AI data annotation', 'prompt engineer', 'LLM evaluation', 'AI tutor', 'generative AI'],
+    titleTerms: ['ai trainer', 'ai tutor', 'prompt', 'annotation', 'annotator', 'data labelling', 'data labeling', 'model evaluation', 'evaluator', 'generative ai', 'genai', 'ai specialist', 'ai analyst', 'ai operations'],
+  },
+  {
+    id: 'internship',
+    group: 'intern',
+    name: 'Internships and graduate programmes',
+    queries: ['internship', 'intern', 'graduate programme', 'work placement', 'graduate analyst', 'data analyst intern', 'business analyst intern'],
+    titleTerms: ['intern', 'internship', 'placement', 'graduate programme', 'graduate program', 'graduate analyst', 'trainee', 'summer analyst'],
   },
 
   // These searches cover the jobs students commonly combine with study. The
