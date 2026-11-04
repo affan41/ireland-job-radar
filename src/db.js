@@ -564,7 +564,7 @@ export function pruneStale(days = 21) {
   return Number(r.changes)
 }
 
-// Remote adverts for the private remote-fit page. Hybrid work is left out, and
+// Remote part-time adverts for the remote-fit page. Hybrid work is left out, and
 // hidden or closed adverts stay hidden. The page scores these in JavaScript.
 export function remoteCandidates() {
   const rows = db.prepare(`
@@ -574,6 +574,7 @@ export function remoteCandidates() {
     WHERE j.merged_into IS NULL AND COALESCE(j.title_needs_review, 0) = 0 AND h.job_id IS NULL
       AND j.verification_status != 'closed' AND (j.closing_at IS NULL OR substr(j.closing_at, 1, 10) >= date('now'))
       AND COALESCE(j.work_mode, '') != 'hybrid'
+      AND j.employment_type IN ('part_time', 'full_or_part_time')
       AND (j.work_mode = 'remote' OR j.region_key = 'remote'
         OR lower(j.title || ' ' || COALESCE(j.location_raw, '')) LIKE '%remote%'
         OR lower(j.title || ' ' || COALESCE(j.location_raw, '')) LIKE '%work from home%')

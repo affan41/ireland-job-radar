@@ -198,9 +198,9 @@ function renderTabs() {
     ...meta.countries.map((c) => ({ view: '', name: `All ${c.name}`, count: f.byCountry?.[c.code] || 0 })),
     ...(meta.views || []).map((v) => ({ view: v.key, name: v.name, count: f.byView?.[v.key] || 0 })),
   ]
-  // Remote jobs is its own page, so its tab is a link. Locally it appears only
+  // Visa checks is its own page, so its tab is a link. Locally it appears only
   // when a private profile exists; the hosted meta always enables it.
-  const remote = meta.remoteFit ? `<a class="tab" href="remote-fit.html">${api.static ? 'Remote jobs' : 'Remote for me'}</a>` : ''
+  const remote = meta.remoteFit ? `<a class="tab" href="remote-fit.html">${api.static ? 'Visa checks' : 'My visa checks'}</a>` : ''
   $('#tabs').innerHTML = tabs.map((t) =>
     `<button class="tab${state.view === t.view ? ' on' : ''}" data-view="${esc(t.view)}">${esc(t.name)}<span>${num(t.count)}</span></button>`).join('') + remote
 }

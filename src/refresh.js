@@ -198,6 +198,8 @@ export async function runRefresh({ quiet = false, requestContext } = {}) {
           const job = buildJob(raw, seenAt)
           // No profile matched at all means it is not a job you asked to see.
           if (!job || job.score === 0 || ['cy','mt'].includes(job.country)) { dropped++; continue }
+          // Remote boards are collected for part-time remote work only.
+          if (raw.source === 'remote' && !['part_time', 'full_or_part_time'].includes(job.employmentType)) { dropped++; continue }
           if (upsertJob(job)) added++
           else refreshed++
         }

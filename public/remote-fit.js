@@ -77,8 +77,8 @@ function render(data) {
   const c = data.counts
   const hidden = c.otherCountry ? ` ${c.otherCountry} more matched these roles but limit remote work to another country, so they are left out.` : ''
   const scoped = c.outOfScope ? ` ${c.outOfScope} more are outside the location option chosen.` : ''
-  $('#count').textContent = `${data.total} remote ${data.total === 1 ? 'match' : 'matches'}${data.total > rows.length ? ` (first ${rows.length} shown)` : ''}: ${c.byLabel.no_conflict_found} no conflict found, ${c.byLabel.needs_verification} need verification, ${c.byLabel.conflict} conflict.${hidden}${scoped}`
-  $('#list').innerHTML = rows.length ? rows.map(card).join('') : '<li class="rf-empty">No remote matches with these options.</li>'
+  $('#count').textContent = `${data.total} remote part-time ${data.total === 1 ? 'match' : 'matches'}${data.total > rows.length ? ` (first ${rows.length} shown)` : ''}: ${c.byLabel.no_conflict_found} no conflict found, ${c.byLabel.needs_verification} need verification, ${c.byLabel.conflict} conflict.${hidden}${scoped}`
+  $('#list').innerHTML = rows.length ? rows.map(card).join('') : '<li class="rf-empty">No remote part-time matches with these options.</li>'
 }
 
 const IRELAND_SCOPES = { ireland: ['stated'], region: ['stated', 'region'], all: ['stated', 'region', 'unknown'] }
@@ -120,7 +120,7 @@ async function load() {
   if (PUBLIC) {
     const data = await publicData()
     if (data) return render(data)
-    $('#count').textContent = 'Remote jobs could not be loaded. Try again later.'
+    $('#count').textContent = 'Visa checks could not be loaded. Try again later.'
     return
   }
   const p = new URLSearchParams({ scope: state.scope, sort: state.sort })
@@ -129,7 +129,7 @@ async function load() {
   if (state.saved) p.set('saved', '1')
   const res = await fetch(`/api/remote-fit?${p}`).catch(() => null)
   if (!res || !res.ok) {
-    $('#count').textContent = 'Remote for me is available only in the local OneLess app on your own computer.'
+    $('#count').textContent = 'My visa checks is available only in the local OneLess app on your own computer.'
     $('#list').innerHTML = ''
     return
   }
@@ -145,10 +145,10 @@ async function saveJob(id, on) {
 
 function setMode() {
   if (!PUBLIC) return
-  document.title = 'OneLess · Remote jobs'
-  $('.top h2').textContent = 'Remote jobs'
+  document.title = 'OneLess · Visa checks'
+  $('.top h2').textContent = 'Visa checks'
   const [lead, how] = $('#intro').children
-  lead.innerHTML = '<strong>Remote jobs you can do from Ireland.</strong> Remote adverts in accounts, finance, data and project roles, compared with the work conditions of a Stamp 2 student permission.'
+  lead.innerHTML = '<strong>Remote part-time jobs you can do from Ireland.</strong> Analytics, AI, internship, project and finance roles, each compared with the work conditions of a Stamp 2 student permission.'
   how.innerHTML = 'A remote or part-time advert is never counted as compatible with a permission on that basis alone. Each check shows the advert wording it relied on. Anything the advert does not say is marked <b>Needs verification</b>.'
 }
 

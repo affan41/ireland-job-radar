@@ -13,6 +13,11 @@ export function remoteEmploymentType(value) {
   return undefined
 }
 
+// Only part-time remote work is wanted from these boards. A structured
+// full-time or contract type is skipped here; refresh.js also drops any
+// remote-board advert that does not classify as part-time.
+const wanted = (type) => !['full_time', 'contract'].includes(type)
+
 export async function fetchRemote({ onProgress, request = getJSON, himalayasPages = 25 } = {}) {
   const out = []
   const errors = []
@@ -23,6 +28,7 @@ export async function fetchRemote({ onProgress, request = getJSON, himalayasPage
     let n = 0
     for (const j of d.jobs || []) {
       if (!irelandRemoteLocation(j.candidate_required_location)) continue
+      if (!wanted(remoteEmploymentType(j.job_type))) continue
       out.push({
         source: 'remote',
         sourceDetail: 'remotive',
@@ -39,7 +45,7 @@ export async function fetchRemote({ onProgress, request = getJSON, himalayasPage
       })
       n++
     }
-    onProgress?.(`remotive: ${n} Ireland-eligible`)
+    onProgress?.(`remotive: ${n} Ireland-eligible, not full-time`)
   } catch (err) { errors.push(`remotive: ${err.message}`) }
 
   // Himalayas. Its API hands back 20 at a time whatever you ask for, so page through.
@@ -56,6 +62,7 @@ export async function fetchRemote({ onProgress, request = getJSON, himalayasPage
         const restrictions = (j.locationRestrictions || []).join(', ')
         // Missing restrictions are not evidence of Ireland eligibility.
         if (!irelandRemoteLocation(restrictions)) continue
+        if (!wanted(remoteEmploymentType(j.employmentType))) continue
         out.push({
           source: 'remote',
           sourceDetail: 'himalayas',
@@ -85,6 +92,7 @@ export async function fetchRemote({ onProgress, request = getJSON, himalayasPage
     let n = 0
     for (const j of d.jobs || []) {
       if (!irelandRemoteLocation(j.jobGeo)) continue
+      if (!wanted(remoteEmploymentType(j.jobType))) continue
       out.push({
         source: 'remote',
         sourceDetail: 'jobicy',
@@ -116,6 +124,7 @@ export async function fetchRemote({ onProgress, request = getJSON, himalayasPage
       if (!irelandRemoteLocation(loc)) continue
       const irish = /\b(ireland|dublin|cork|galway|limerick)\b/i.test(loc)
       if (!irish && !j.remote) continue
+      if (!wanted(remoteEmploymentType(j.job_types))) continue
       out.push({
         source: 'remote',
         sourceDetail: 'arbeitnow',

@@ -144,6 +144,11 @@ test('public remote page uses standard Stamp 2 rules and never says no conflict 
   assert.equal(isRemoteCandidate({ ...good, work_mode: 'hybrid' }), false)
   assert.equal(isRemoteCandidate({ ...good, verification_status: 'closed' }), false)
   assert.equal(isRemoteCandidate({ ...good, work_mode: 'onsite', location_raw: 'Cork', title: 'Bookkeeper' }), false)
+  // Visa checks list part-time remote work only.
+  assert.equal(isRemoteCandidate({ ...good, employment_type: 'full_time' }), false)
+  assert.equal(isRemoteCandidate({ ...good, employment_type: 'contract' }), false)
+  assert.equal(isRemoteCandidate({ ...good, employment_type: 'unspecified' }), false)
+  assert.equal(isRemoteCandidate({ ...good, employment_type: 'full_or_part_time' }), true)
 })
 
 test('private profile stays out of git and the hosted build', () => {
@@ -201,4 +206,22 @@ test('main list visa sort ranks stated short part-time hours above unknown or fu
   const { rows } = queryJobs({ view: 'limerick-pt', countries: ['ie'], includeUnstated: true, sort: 'visa', limit: 300 })
   const rank = (j) => (j.employment_type === 'part_time' ? 0 : 1) + (j.hours_max != null && j.hours_max <= 20 ? 0 : 1)
   for (let i = 1; i < rows.length; i++) if (rank(rows[i - 1]) > rank(rows[i]) + 1) assert.fail(`${rows[i - 1].title} before ${rows[i].title}`)
+})
+
+test('remote boards skip structured full-time and contract adverts', async () => {
+  const { fetchRemote } = await import('../src/sources/remote.js')
+  const request = async (url) => {
+    if (url.includes('remotive')) return { jobs: [
+      { title: 'Data Analyst', candidate_required_location: 'Ireland', job_type: 'full_time', url: 'https://example.test/1' },
+      { title: 'Data Analyst', candidate_required_location: 'Ireland', job_type: 'contract', url: 'https://example.test/2' },
+      { title: 'Data Analyst', candidate_required_location: 'Ireland', job_type: 'part_time', url: 'https://example.test/3' },
+    ] }
+    return { jobs: [], data: [] }
+  }
+  const r = await fetchRemote({ request, himalayasPages: 1 })
+  assert.deepEqual(r.jobs.map((j) => j.url), ['https://example.test/3'])
+  const { db } = await import('../src/db.js')
+  const rows = (await import('../src/db.js')).remoteCandidates()
+  assert.ok(rows.every((j) => ['part_time', 'full_or_part_time'].includes(j.employment_type)))
+  assert.ok(db)
 })

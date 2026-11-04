@@ -339,9 +339,11 @@ export const PUBLIC_PROFILE = {
   permission: { stamp: '2', standard: true },
 }
 
-// The same selection as remoteCandidates() in db.js, for rows already loaded.
+// The same selection as remoteCandidates() in db.js, for rows already loaded:
+// remote, not hybrid, still open, and advertised as part-time.
 export function isRemoteCandidate(job, today = new Date().toISOString().slice(0, 10)) {
   if (job.work_mode === 'hybrid' || job.verification_status === 'closed') return false
+  if (!['part_time', 'full_or_part_time'].includes(job.employment_type)) return false
   if (job.closing_at && job.closing_at.slice(0, 10) < today) return false
   const text = `${job.title} ${job.location_raw || ''}`.toLowerCase()
   return job.work_mode === 'remote' || job.region_key === 'remote' || text.includes('remote') || text.includes('work from home')

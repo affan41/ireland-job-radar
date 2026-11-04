@@ -216,20 +216,23 @@ and `jobAlert.enabled` control the new direct-site and independent-board collect
 `tesco.maxPages` control the official Tesco collector. The same strict part-time
 rules apply to all new sources; unknown hours never qualify through a search term.
 
-## Remote jobs and Remote for me
+## Remote part time and Visa checks
 
 `remote-fit.html`, linked in the header. It sits alongside the normal tabs and
 shortlist; shortlisting a job there adds it to the same shortlist.
 
-- **Remote jobs** (hosted site): remote accounts, finance, data and project adverts,
+- **Remote part time** tab: remote part-time adverts in any role that name Ireland or a
+  Europe-wide / worldwide area, without contractor, freelance or full-time work.
+- **Visa checks** (hosted site): remote part-time analytics, AI, internship, project and finance adverts,
   checked against the standard Stamp 2 student conditions. Built from `PUBLIC_PROFILE`
   in `src/remote-fit.js` into `data/remote-fit.json`. Nothing personal is included,
   and the permission check always asks readers to compare with their own permission,
   so the hosted page never shows "No conflict found".
-- **Remote for me** (local app): the same page, matched against your private profile
+- **My visa checks** (local app): the same page, matched against your private profile
   and your recorded permission.
 
-It lists remote adverts whose job title matches the role families, then compares each
+Only part-time remote work is collected from the remote job boards, and these pages
+list only adverts that say they are part-time. They list adverts whose job title matches the role families, then compares each
 advert's wording with the permission conditions. Each card shows six checks, the advert sentence each one relied on, and
 the rule it was compared with:
 
