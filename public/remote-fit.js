@@ -75,7 +75,7 @@ function render(data) {
   if (!data.available) { $('#count').textContent = ''; $('#list').innerHTML = ''; return }
   rows = data.rows
   const c = data.counts
-  const hidden = c.otherCountry ? ` ${c.otherCountry} more matched your roles but limit remote work to another country, so they are left out.` : ''
+  const hidden = c.otherCountry ? ` ${c.otherCountry} more matched these roles but limit remote work to another country, so they are left out.` : ''
   const scoped = c.outOfScope ? ` ${c.outOfScope} more are outside the location option chosen.` : ''
   $('#count').textContent = `${data.total} remote ${data.total === 1 ? 'match' : 'matches'}${data.total > rows.length ? ` (first ${rows.length} shown)` : ''}: ${c.byLabel.no_conflict_found} no conflict found, ${c.byLabel.needs_verification} need verification, ${c.byLabel.conflict} conflict.${hidden}${scoped}`
   $('#list').innerHTML = rows.length ? rows.map(card).join('') : '<li class="rf-empty">No remote matches with these options.</li>'
