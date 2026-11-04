@@ -198,8 +198,11 @@ function renderTabs() {
     ...meta.countries.map((c) => ({ view: '', name: `All ${c.name}`, count: f.byCountry?.[c.code] || 0 })),
     ...(meta.views || []).map((v) => ({ view: v.key, name: v.name, count: f.byView?.[v.key] || 0 })),
   ]
+  // Remote jobs is its own page, so its tab is a link. Locally it appears only
+  // when a private profile exists; the hosted meta always enables it.
+  const remote = meta.remoteFit ? `<a class="tab" href="remote-fit.html">${api.static ? 'Remote jobs' : 'Remote for me'}</a>` : ''
   $('#tabs').innerHTML = tabs.map((t) =>
-    `<button class="tab${state.view === t.view ? ' on' : ''}" data-view="${esc(t.view)}">${esc(t.name)}<span>${num(t.count)}</span></button>`).join('')
+    `<button class="tab${state.view === t.view ? ' on' : ''}" data-view="${esc(t.view)}">${esc(t.name)}<span>${num(t.count)}</span></button>`).join('') + remote
 }
 
 function renderFilters() {
@@ -447,12 +450,6 @@ async function loadMeta() {
   const nextMeta = await api.meta(requested)
   if (requested !== params().toString()) return
   meta = nextMeta
-  // Locally: set only when a private profile exists. Hosted: the public page.
-  const remoteFitLink = $('#remoteFitLink')
-  if (remoteFitLink) {
-    remoteFitLink.hidden = !meta.remoteFit
-    if (api.static) remoteFitLink.textContent = 'Remote jobs'
-  }
   renderFilters()
   const when = meta.lastRun?.finished_at
   $('#tagline').textContent = `${num(meta.stats.newLast24h)} new today${when ? ` · updated ${timeAgo(when)}` : ''}`
@@ -568,7 +565,7 @@ function bind() {
   document.addEventListener('click', (e) => { for (const chip of chips) if (chip.open && !chip.contains(e.target)) chip.open = false })
 
   $('#tabs').addEventListener('click', (e) => {
-    const tab = e.target.closest('.tab')
+    const tab = e.target.closest('button.tab')
     if (tab) switchView(tab.dataset.view)
   })
 
