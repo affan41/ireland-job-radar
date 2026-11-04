@@ -1,0 +1,26 @@
+{
+  "_note": "Copy to private/profile.json (git-ignored) and fill in your own details. Keep real details out of this file.",
+  "background": ["One line per area of work experience"],
+  "studies": {
+    "institution": "Your university",
+    "programme": "Your exact programme title",
+    "programmeConfirmed": false,
+    "coursework": ["subject"]
+  },
+  "roles": [
+    {
+      "id": "example",
+      "name": "Example role family",
+      "titleTerms": ["words that appear in suitable job titles"]
+    }
+  ],
+  "skills": ["tools and skills to look for in the advert"],
+  "seniorTitleTerms": ["senior", "lead", "manager"],
+  "excludeTitleTerms": ["head of", "director"],
+  "permission": {
+    "stamp": null,
+    "expires": null,
+    "additionalConditions": [],
+    "confirmedByMe": false
+  }
+}

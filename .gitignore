@@ -7,3 +7,6 @@ node_modules/
 npm-debug.log*
 outputs/
 dist/
+
+# Private profile and permission details for the remote-fit page. Never commit.
+private/

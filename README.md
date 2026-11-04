@@ -216,6 +216,49 @@ and `jobAlert.enabled` control the new direct-site and independent-board collect
 `tesco.maxPages` control the official Tesco collector. The same strict part-time
 rules apply to all new sources; unknown hours never qualify through a search term.
 
+## Remote jobs and Remote for me
+
+`remote-fit.html`, linked in the header. It sits alongside the normal tabs and
+shortlist; shortlisting a job there adds it to the same shortlist.
+
+- **Remote jobs** (hosted site): remote accounts, finance, data and project adverts,
+  checked against the standard Stamp 2 student conditions. Built from `PUBLIC_PROFILE`
+  in `src/remote-fit.js` into `data/remote-fit.json`. Nothing personal is included,
+  and the permission check always asks readers to compare with their own permission,
+  so the hosted page never shows "No conflict found".
+- **Remote for me** (local app): the same page, matched against your private profile
+  and your recorded permission.
+
+It lists remote adverts whose job title matches the role families, then compares each
+advert's wording with the permission conditions. Each card shows six checks, the advert sentence each one relied on, and
+the rule it was compared with:
+
+| Check | What counts as support |
+| --- | --- |
+| Your permission | Your stamp, expiry and extra conditions are recorded and marked confirmed by you |
+| Working from Ireland | The advert names Ireland or an Irish place. Europe-wide or worldwide labels need verification; remote work tied to another country is left out |
+| Employee, not self-employed | Wording such as permanent, PAYE or employee. Freelance, contractor or self-employed wording conflicts |
+| Weekly hours | Stated weekly hours compared with your stamp's limit |
+| Right-to-work wording | Wording that accepts your stamp. Stamp 4, citizenship, unrestricted rights or another country's work authorisation conflict |
+| Employer and payroll in Ireland | PAYE, Irish payroll or an Irish entity. Official guidance does not cover working remotely for an employer abroad |
+
+The result is **No conflict found in advert** only when every check has advert
+evidence. Otherwise it is **Needs verification** or **Conflicts with your recorded
+conditions**. Remote or part-time work never counts as compatible on that basis
+alone. This is a reading of advert text, not immigration advice.
+
+Built-in rules (Stamp 2, 2A and 1G) follow the ISD stamp conditions and student FAQ
+pages, read on 4 November 2026. Any other stamp is shown as needs verification.
+
+### Your private profile
+
+Copy `profile.example.json` to `private/profile.json` and fill it in: role families
+(job-title words), skills, studies, and under `permission` your stamp, IRP expiry and
+any extra conditions from your permission letter. Set `confirmedByMe` to `true` once
+checked. `private/` is ignored by git and Docker. The profile is read only by the
+local server, which answers `/api/remote-fit` for this computer only. The hosted build
+uses the general public profile instead and never reads the private file.
+
 ## Filters
 
 - **Views.** All Ireland and Part time. The Part time tab looks back 30 days by
@@ -292,6 +335,8 @@ src/profiles.js            The searches to run and how relevance is scored
 src/employment.js          Part-time, full-time, temporary and contract detection
 src/normalise.js           Deduplication, salary parsing, HTML cleanup
 src/db.js                  SQLite schema and queries
+src/remote-fit.js          Private remote matches and permission evidence checks
+private/profile.json       Your private profile (git-ignored, never published)
 src/sources/               One adapter per source
 public/                    The interface
 data/jobs.db               The database, created on first run

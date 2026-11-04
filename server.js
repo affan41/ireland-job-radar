@@ -8,7 +8,8 @@ import { allRegions, PROVINCE_ORDER, COUNTRIES } from './src/regions.js'
 import { VIEWS, VIEW_BY_KEY } from './src/views.js'
 import { SPONSORSHIP_LEVELS, PERMIT_NOTES } from './src/sponsorship.js'
 import { GROUPS, PROFILES } from './src/profiles.js'
-import { queryJobs, getJob, facets, setSaved, setHidden, stats, lastRun, recentRuns } from './src/db.js'
+import { queryJobs, getJob, facets, setSaved, setHidden, stats, lastRun, recentRuns, remoteCandidates } from './src/db.js'
+import { loadProfile, profileSummary, remoteFitList, fitRow, GUIDANCE } from './src/remote-fit.js'
 import { runRefresh, scheduleRefresh, refreshState } from './src/refresh.js'
 
 const ROOT = dirname(fileURLToPath(import.meta.url))
@@ -69,6 +70,11 @@ function listRow({ full_description, hours_evidence, profiles, groups, descripti
   return { ...row, description: description && description.length > 320 ? `${description.slice(0, 320)}…` : description }
 }
 
+// The remote-fit page reads a private profile, so it answers this computer only,
+// even if the server is ever reachable from elsewhere.
+const LOOPBACK = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1'])
+const isLocal = (req) => LOOPBACK.has(req.socket.remoteAddress)
+
 async function readBody(req) {
   const chunks = []
   for await (const c of req) chunks.push(c)
@@ -98,7 +104,21 @@ const server = createServer(async (req, res) => {
         runs: recentRuns(6),
         refreshMinutes: config.refreshMinutes,
         adzunaConfigured: Boolean(config.adzuna.appId && config.adzuna.appKey),
+        // A yes/no only. The profile itself is served by /api/remote-fit.
+        remoteFit: isLocal(req) && profileSummary(loadProfile()).configured,
       })
+    }
+
+    if (path === '/api/remote-fit') {
+      if (!isLocal(req)) return json(res, { error: 'Available on this computer only' }, 403)
+      const profile = loadProfile()
+      const summary = profileSummary(profile)
+      if (!summary.configured) return json(res, { available: false, profile: summary, guidance: GUIDANCE })
+      const p = url.searchParams
+      const { rows, counts } = remoteFitList(remoteCandidates(), profile, {
+        scope: p.get('scope') || 'region', label: p.get('label') || '', savedOnly: p.get('saved') === '1', q: p.get('q') || '',
+      })
+      return json(res, { available: true, profile: summary, guidance: GUIDANCE, counts, total: rows.length, rows: rows.slice(0, 200).map((r) => fitRow(r, { includeSaved: true })) })
     }
 
     if (path === '/api/jobs') {

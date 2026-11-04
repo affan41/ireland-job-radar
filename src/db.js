@@ -551,3 +551,20 @@ export function pruneStale(days = 21) {
   const r=db.prepare("UPDATE jobs SET verification_status='unverified',verification_reason='Previous verification is stale' WHERE verification_status='open' AND verified_at<?").run(cutoff)
   return Number(r.changes)
 }
+
+// Remote adverts for the private remote-fit page. Hybrid work is left out, and
+// hidden or closed adverts stay hidden. The page scores these in JavaScript.
+export function remoteCandidates() {
+  const rows = db.prepare(`
+    SELECT j.*, (s.job_id IS NOT NULL) AS is_saved, s.note AS note,
+      (SELECT GROUP_CONCAT(DISTINCT js.source) FROM job_sources js WHERE js.job_id = j.id) AS available_sources
+    ${JOINS}
+    WHERE j.merged_into IS NULL AND COALESCE(j.title_needs_review, 0) = 0 AND h.job_id IS NULL
+      AND j.verification_status != 'closed' AND (j.closing_at IS NULL OR substr(j.closing_at, 1, 10) >= date('now'))
+      AND COALESCE(j.work_mode, '') != 'hybrid'
+      AND (j.work_mode = 'remote' OR j.region_key = 'remote'
+        OR lower(j.title || ' ' || COALESCE(j.location_raw, '')) LIKE '%remote%'
+        OR lower(j.title || ' ' || COALESCE(j.location_raw, '')) LIKE '%work from home%')
+  `).all()
+  return rows.map((j) => ({ ...j, verification_status: effectiveStatus(j) }))
+}

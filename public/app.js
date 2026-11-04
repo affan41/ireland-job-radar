@@ -447,6 +447,12 @@ async function loadMeta() {
   const nextMeta = await api.meta(requested)
   if (requested !== params().toString()) return
   meta = nextMeta
+  // Locally: set only when a private profile exists. Hosted: the public page.
+  const remoteFitLink = $('#remoteFitLink')
+  if (remoteFitLink) {
+    remoteFitLink.hidden = !meta.remoteFit
+    if (api.static) remoteFitLink.textContent = 'Remote jobs'
+  }
   renderFilters()
   const when = meta.lastRun?.finished_at
   $('#tagline').textContent = `${num(meta.stats.newLast24h)} new today${when ? ` · updated ${timeAgo(when)}` : ''}`

@@ -12,6 +12,7 @@ import { VIEWS, viewClause } from '../src/views.js'
 import { allRegions, PROVINCE_ORDER, COUNTRIES } from '../src/regions.js'
 import { SPONSORSHIP_LEVELS, PERMIT_NOTES } from '../src/sponsorship.js'
 import { GROUPS } from '../src/profiles.js'
+import { PUBLIC_PROFILE, GUIDANCE, isRemoteCandidate, remoteFitList, fitRow } from '../src/remote-fit.js'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const DIST = join(ROOT, 'dist')
@@ -25,6 +26,10 @@ writeFileSync(join(DIST, '.nojekyll'), '')
 // The distance note names the owner's home area; the hosted page has no distances.
 const indexFile = join(DIST, 'index.html')
 writeFileSync(indexFile, readFileSync(indexFile, 'utf8').replace(/\s*<p id="distanceNote">[\s\S]*?<\/p>/, ''))
+// The hosted remote page reads exported data checked against the standard
+// Stamp 2 conditions, never the private profile the local server uses.
+const remoteFile = join(DIST, 'remote-fit.html')
+writeFileSync(remoteFile, readFileSync(remoteFile, 'utf8').replace('<meta name="robots" content="noindex">', '<meta name="oneless-mode" content="public">'))
 
 const snapshot = publicJobSnapshot(db)
 const sources = new Map()
@@ -77,6 +82,15 @@ for (const j of stored) {
 writeFileSync(join(DIST, 'data', 'jobs.json'), JSON.stringify(jobs))
 for (const [prefix, bucket] of Object.entries(detail)) writeFileSync(join(DIST, 'data', 'detail', `${prefix}.json`), JSON.stringify(bucket))
 
+// Remote jobs for the public page. No shortlist flags: those are personal.
+const remote = remoteFitList(stored.filter((j) => isRemoteCandidate({ ...j, verification_status: effectiveStatus(j) }))
+  .map((j) => ({ ...j, verification_status: effectiveStatus(j) })), PUBLIC_PROFILE, { scope: 'all' })
+writeFileSync(join(DIST, 'data', 'remote-fit.json'), JSON.stringify({
+  guidance: GUIDANCE,
+  otherCountry: remote.counts.otherCountry,
+  rows: remote.rows.map((r) => fitRow(r)),
+}))
+
 writeFileSync(join(DIST, 'data', 'meta.json'), JSON.stringify({
   regions: allRegions().filter((r) => !r.country || r.country === 'ie'),
   provinceOrder: PROVINCE_ORDER.filter((p) => !['Cyprus', 'Malta'].includes(p)),
@@ -87,6 +101,7 @@ writeFileSync(join(DIST, 'data', 'meta.json'), JSON.stringify({
   groups: GROUPS,
   lastRun: lastRun(),
   windowDays: null,
+  remoteFit: true,
 }))
 
 const size = (file) => `${(readFileSync(join(DIST, 'data', file)).length / 1024).toFixed(0)} KB`
