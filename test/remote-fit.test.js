@@ -2,7 +2,9 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
-import { assessRemoteFit, irelandEvidence, roleMatch, remoteFitList, profileSummary, normaliseStamp, PUBLIC_PROFILE, isRemoteCandidate, fitRow } from '../src/remote-fit.js'
+import { assessRemoteFit, irelandEvidence, roleMatch, remoteFitList, profileSummary, normaliseStamp, PUBLIC_PROFILE, isRemoteCandidate, fitRow, remoteFromIreland } from '../src/remote-fit.js'
+import { queryJobs } from '../src/db.js'
+import { VIEW_BY_KEY } from '../src/views.js'
 
 // A made-up profile. Real details live only in the git-ignored private/ folder.
 const base = {
@@ -154,4 +156,23 @@ test('private profile stays out of git and the hosted build', () => {
   for (const file of ['site/api.js', 'site/static-core.js', 'public/remote-fit.js']) assert.doesNotMatch(readFileSync(file, 'utf8'), /profile\.json'|loadProfile/)
   const example = JSON.parse(readFileSync('profile.example.json', 'utf8'))
   assert.equal(example.permission.stamp, null)
+})
+
+test('Remote part time tab keeps Ireland-workable employee adverts only', () => {
+  assert.equal(remoteFromIreland('Part-time Bookkeeper', 'Remote, Ireland', 'Part-time employee.'), 1)
+  assert.equal(remoteFromIreland('Customer Support (Part-time)', 'Europe', 'Part-time.'), 1)
+  for (const [title, location, text] of [
+    ['Customer Support (Part-time)', 'United Kingdom', 'Part-time.'],
+    ['Customer Support (Part-time)', 'Remote', 'Part-time.'],
+    ['External Contractor - Mentor', 'Anywhere', 'Part-time.'],
+    ['Tutor (Part-time)', 'Ireland', 'This is a freelance position.'],
+    ['Support Agent - Remote US', 'Ireland', 'Part-time.'],
+  ]) assert.equal(remoteFromIreland(title, location, text), 0, title)
+  assert.ok(VIEW_BY_KEY['remote-pt'])
+  // The view runs through SQL, including the registered advert-wording function.
+  const result = queryJobs({ view: 'remote-pt', countries: ['ie'], limit: 300 })
+  for (const j of result.rows) {
+    assert.equal(j.work_mode, 'remote')
+    assert.ok(['part_time', 'full_or_part_time'].includes(j.employment_type), j.title)
+  }
 })

@@ -217,6 +217,9 @@ function renderFilters() {
 
   const view = (meta.views || []).find((v) => v.key === state.view)
   $('#viewOptions').hidden = !view
+  // Nearby towns belong to the Limerick view; unstated hours to views that allow it.
+  $('#includeNearby').closest('label').hidden = state.view !== 'limerick-pt'
+  $('#includeUnstated').closest('label').hidden = !view?.unstatedHours
 
   // Each chip says how many things it is filtering by.
   const active = {

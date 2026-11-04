@@ -93,7 +93,7 @@ const server = createServer(async (req, res) => {
         regions: allRegions().filter(r => !r.country || r.country === 'ie'),
         provinceOrder: PROVINCE_ORDER.filter(p => !['Cyprus','Malta'].includes(p)),
         countries: COUNTRIES.filter(c => c.code === 'ie').map((c) => ({ code: c.code, name: c.name, provinces: c.provinces })),
-        views: VIEWS.map((v) => ({ key: v.key, name: v.name, country: v.country, note: v.note, noteLink: v.noteLink, defaultDays: v.defaultDays })),
+        views: VIEWS.map((v) => ({ key: v.key, name: v.name, country: v.country, note: v.note, noteLink: v.noteLink, defaultDays: v.defaultDays, unstatedHours: Boolean(v.unstatedHours) })),
         sponsorshipLevels: SPONSORSHIP_LEVELS,
         permitNotes: {ie: PERMIT_NOTES.ie},
         groups: GROUPS,

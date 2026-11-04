@@ -40,6 +40,27 @@ export const VIEWS = [
       text: 'Irish immigration guidance',
     },
   },
+  {
+    key: 'remote-pt',
+    name: 'Remote part time',
+    country: 'ie',
+    // Remote adverts that name Ireland or a Europe-wide / worldwide area. Remote
+    // work tied to another country, and self-employed work, are left out.
+    remoteFromIreland: true,
+    excludeEmploymentTypes: ['full_time', 'contract'],
+    requireAny: {
+      employmentTypes: ['part_time', 'full_or_part_time'],
+    },
+    defaultDays: 0,
+    note: 'Remote part-time adverts you could do from Ireland. The advert must say it is part-time and name Ireland or a Europe-wide or worldwide area; '
+      + 'remote work tied to another country, full-time, contract and self-employed work are left out. A Europe-wide or worldwide label does not prove the employer can employ someone living in Ireland, so confirm it. '
+      + 'On a Stamp 2 student permission you may work 20 hours a week during term and 40 hours a week in June to September and 15 December to 15 January, as an employee only. '
+      + 'Part-time hours can still exceed 20 a week, and many adverts do not state them. Check the conditions on your own permission before you apply.',
+    noteLink: {
+      href: 'https://www.irishimmigration.ie/coming-to-study-in-ireland/frequently-asked-questions-for-students/',
+      text: 'Irish immigration guidance',
+    },
+  },
 ]
 
 export const VIEW_BY_KEY = Object.fromEntries(VIEWS.map((v) => [v.key, v]))
@@ -58,6 +79,7 @@ export function viewClause(key, { includeNearby = false, includeUnstated = false
     params.push(...v.regionKeys)
   }
   if (v.includeRemote) location.push(`(j.work_mode = 'remote' AND j.remote_student_note IS NOT NULL)`)
+  if (v.remoteFromIreland) location.push(`(j.work_mode = 'remote' AND remote_from_ireland(j.title, j.location_raw, COALESCE(j.full_description, j.description, '')) = 1)`)
   if (key === 'limerick-pt' && includeNearby) {
     // Match whole place names within the correct county, not all of Clare or
     // Tipperary (and never Carrick-on-Shannon or Enniscorthy).

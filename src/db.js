@@ -1,4 +1,5 @@
 import { DatabaseSync } from 'node:sqlite'
+import { remoteFromIreland } from './remote-fit.js'
 import {createHash} from 'node:crypto'
 import { VIEWS, VIEW_BY_KEY, viewClause } from './views.js'
 import { studentRole } from './normalise.js'
@@ -14,6 +15,8 @@ const DB_PATH = process.env.JOBS_DB || join(ROOT, 'data', 'jobs.db')
 mkdirSync(dirname(DB_PATH), { recursive: true })
 
 export const db = new DatabaseSync(DB_PATH)
+// The Remote part time view reads advert wording that SQL alone cannot judge.
+db.function('remote_from_ireland', { deterministic: true }, (title, location, text) => remoteFromIreland(title || '', location || '', text || ''))
 
 db.exec(`
   PRAGMA journal_mode = WAL;

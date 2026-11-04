@@ -234,6 +234,15 @@ function payrollCheck(text) {
   return check('payroll', name, 'needs_verification', null, `${GUIDANCE.silentOn} Confirm the employer would employ you in Ireland, on an Irish payroll.`)
 }
 
+// For the Remote part time tab, which filters in SQL: 1 when the advert names
+// Ireland or a Europe-wide / worldwide area and is not self-employed work.
+export function remoteFromIreland(title, location, text) {
+  const job = { title, location_raw: location, full_description: text }
+  if (!['stated', 'region'].includes(irelandEvidence(job).status)) return 0
+  if (/\b(?:contractor|freelanc\w*|self[\s-]?employ\w*)\b/i.test(title)) return 0
+  return SELF_EMPLOYED.test(clean(`${title}. ${text || ''}`)) ? 0 : 1
+}
+
 export const LABELS = {
   conflict: 'Conflicts with your recorded conditions',
   needs_verification: 'Needs verification',
